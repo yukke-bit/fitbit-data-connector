@@ -297,6 +297,26 @@
                 
                 log('✅ 生成された認証URL:');
                 log(authUrl);
+                
+                // URL詳細検証
+                log('');
+                log('🔍 URL構成要素検証:');
+                const urlObj = new URL(authUrl);
+                log(`ベースURL: ${urlObj.origin}${urlObj.pathname}`);
+                log('パラメータ:');
+                for (const [key, value] of urlObj.searchParams.entries()) {
+                    log(`  ${key}: ${value}`);
+                }
+                
+                // パラメータ妥当性チェック
+                const requiredParams = ['response_type', 'client_id', 'redirect_uri', 'scope'];
+                const missingParams = requiredParams.filter(param => !urlObj.searchParams.has(param));
+                if (missingParams.length > 0) {
+                    log(`❌ 不足パラメータ: ${missingParams.join(', ')}`);
+                } else {
+                    log('✅ 必須パラメータ全て存在');
+                }
+                
                 log('');
                 log('🔗 直接アクセス用（クリック可能）:');
                 log(`<a href="${authUrl}" target="_blank">Fitbit認証ページを開く</a>`);
