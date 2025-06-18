@@ -107,6 +107,8 @@ router.get('/callback', async (req, res) => {
         req.session.tokenExpiry = new Date(Date.now() + expires_in * 1000);
         
         console.log('✅ Fitbit認証成功 - ユーザーID:', user_id);
+        console.log('💾 セッション保存完了');
+        console.log('🔄 ダッシュボードにリダイレクト開始');
         
         // ダッシュボードにリダイレクト
         res.redirect('/dashboard');

@@ -60,9 +60,19 @@ app.get('/', (req, res) => {
 
 // ダッシュボードページ
 app.get('/dashboard', (req, res) => {
+    console.log('📊 ダッシュボードアクセス');
+    console.log('🔍 セッション確認:', {
+        hasAccessToken: !!req.session.accessToken,
+        userId: req.session.userId,
+        tokenExpiry: req.session.tokenExpiry
+    });
+    
     if (!req.session.accessToken) {
+        console.log('❌ アクセストークンなし - ホームにリダイレクト');
         return res.redirect('/');
     }
+    
+    console.log('✅ 認証済み - ダッシュボード表示');
     res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
 
