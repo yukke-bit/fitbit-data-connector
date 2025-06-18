@@ -52,6 +52,9 @@ router.get('/login', (req, res) => {
 
 // OAuth コールバック処理
 router.get('/callback', async (req, res) => {
+    console.log('🔄 OAuth コールバック処理開始');
+    console.log('📥 クエリパラメータ:', req.query);
+    
     const { code, error, error_description } = req.query;
     
     if (error) {
@@ -65,8 +68,11 @@ router.get('/callback', async (req, res) => {
     
     if (!code) {
         console.error('❌ 認証コードが見つかりません');
+        console.log('🔍 受信したクエリ:', JSON.stringify(req.query, null, 2));
         return res.redirect('/?error=no_code&error_description=認証コードが見つかりません');
     }
+    
+    console.log('✅ 認証コード受信:', code.substring(0, 20) + '...');
     
     try {
         // 環境変数から認証情報を取得

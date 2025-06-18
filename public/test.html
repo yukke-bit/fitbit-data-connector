@@ -333,6 +333,16 @@
             } else {
                 log('📄 URLパラメータなし');
             }
+            
+            // URLフラグメント（#以降）もチェック
+            const fragment = window.location.hash;
+            if (fragment) {
+                log('🔍 URLフラグメント発見: ' + fragment);
+                if (fragment === '#_=_') {
+                    log('⚠️ 警告: これはFacebookのOAuthフラグメントです！');
+                    log('❌ Fitbit認証ではありません！');
+                }
+            }
         }
         
         // 初期化
