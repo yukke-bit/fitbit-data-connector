@@ -45,12 +45,21 @@ SESSION_SECRET=your-session-secret
 PORT=3000
 ```
 
+**重要**: すべてのユーザーが同じFitbitアプリケーションを使用します。
+
 ### 4. サーバー起動
 ```bash
 npm run dev
 ```
 
 アプリケーションが `http://localhost:3000` で起動します。
+
+## 🎯 **使用方法**
+
+1. **アプリにアクセス** - ブラウザでアプリのURLを開く
+2. **「Fitbitと連携する」ボタンをクリック** - Fitbit認証画面に自動遷移
+3. **Fitbitアカウントでログイン** - 認証を許可
+4. **ダッシュボードでデータ確認** - 自動的にダッシュボードに移動しデータ表示
 
 ## 🌐 **Vercelデプロイ**
 
@@ -78,6 +87,8 @@ FITBIT_REDIRECT_URI=https://your-app-name.vercel.app/auth/callback
 SESSION_SECRET=your-super-secret-session-key
 NODE_ENV=production
 ```
+
+**注意**: 環境変数の設定は必須です。
 
 ### 4. Fitbitアプリ設定更新
 Fitbit Developer Consoleで：

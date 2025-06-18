@@ -6,83 +6,14 @@ const FITBIT_BASE_URL = 'https://api.fitbit.com';
 const FITBIT_AUTH_URL = 'https://www.fitbit.com/oauth2/authorize';
 const FITBIT_TOKEN_URL = 'https://api.fitbit.com/oauth2/token';
 
-// OAuth認証設定＆URL取得（動的設定用）
-router.post('/api/auth/setup', (req, res) => {
-    const { clientId, clientSecret, redirectUri } = req.body;
-    
-    // バリデーション
-    if (!clientId || !clientSecret || !redirectUri) {
-        return res.status(400).json({
-            success: false,
-            error: 'Missing required fields',
-            message: 'Client ID, Client Secret, Redirect URIをすべて入力してください'
-        });
-    }
-    
-    // セッションに一時保存
-    req.session.tempFitbitConfig = {
-        clientId,
-        clientSecret,
-        redirectUri
-    };
-    
-    const scope = 'activity heartrate sleep profile weight nutrition';
-    const authUrl = `${FITBIT_AUTH_URL}?` + new URLSearchParams({
-        response_type: 'code',
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        scope: scope,
-        expires_in: '31536000' // 1年
-    });
-    
-    console.log('🔐 動的Fitbit認証URL生成:', authUrl);
-    
-    res.json({
-        success: true,
-        authUrl: authUrl,
-        message: 'Fitbit認証URLを生成しました'
-    });
-});
-
-// OAuth認証URL取得（従来の環境変数方式）
-router.get('/fitbit', (req, res) => {
-    const clientId = process.env.FITBIT_CLIENT_ID;
-    const redirectUri = process.env.FITBIT_REDIRECT_URI;
-    const scope = 'activity heartrate sleep profile weight nutrition';
-    
-    if (!clientId || !redirectUri) {
-        return res.status(500).json({
-            success: false,
-            error: 'Missing Fitbit configuration',
-            message: 'Please set FITBIT_CLIENT_ID and FITBIT_REDIRECT_URI in environment variables'
-        });
-    }
-    
-    const authUrl = `${FITBIT_AUTH_URL}?` + new URLSearchParams({
-        response_type: 'code',
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        scope: scope,
-        expires_in: '31536000' // 1年
-    });
-    
-    console.log('🔐 Fitbit認証URL生成:', authUrl);
-    
-    res.json({
-        success: true,
-        authUrl: authUrl,
-        message: 'Fitbit認証URLを生成しました'
-    });
-});
-
-// OAuth認証開始（従来のリダイレクト方式も維持）
+// OAuth認証開始（環境変数方式）
 router.get('/login', (req, res) => {
     const clientId = process.env.FITBIT_CLIENT_ID;
     const redirectUri = process.env.FITBIT_REDIRECT_URI;
     const scope = 'activity heartrate sleep profile weight nutrition';
     
     if (!clientId || !redirectUri) {
-        return res.redirect('/login?error=config_missing');
+        return res.redirect('/?error=config_missing&error_description=Fitbit設定が見つかりません');
     }
     
     const authUrl = `${FITBIT_AUTH_URL}?` + new URLSearchParams({
@@ -107,33 +38,23 @@ router.get('/callback', async (req, res) => {
             error: error,
             error_description: error_description || ''
         });
-        return res.redirect(`/login?${errorParams}`);
+        return res.redirect(`/?${errorParams}`);
     }
     
     if (!code) {
         console.error('❌ 認証コードが見つかりません');
-        return res.redirect('/login?error=no_code&error_description=認証コードが見つかりません');
+        return res.redirect('/?error=no_code&error_description=認証コードが見つかりません');
     }
     
     try {
-        // 動的設定または環境変数から認証情報を取得
-        let clientId, clientSecret, redirectUri;
+        // 環境変数から認証情報を取得
+        const clientId = process.env.FITBIT_CLIENT_ID;
+        const clientSecret = process.env.FITBIT_CLIENT_SECRET;
+        const redirectUri = process.env.FITBIT_REDIRECT_URI;
         
-        if (req.session.tempFitbitConfig) {
-            // 動的設定を使用
-            ({ clientId, clientSecret, redirectUri } = req.session.tempFitbitConfig);
-            console.log('🔄 動的設定を使用してトークン取得');
-        } else {
-            // 環境変数を使用（従来方式）
-            clientId = process.env.FITBIT_CLIENT_ID;
-            clientSecret = process.env.FITBIT_CLIENT_SECRET;
-            redirectUri = process.env.FITBIT_REDIRECT_URI;
-            console.log('🔄 環境変数を使用してトークン取得');
-            
-            if (!clientId || !clientSecret || !redirectUri) {
-                console.error('❌ 認証設定が見つかりません');
-                return res.redirect('/setup?error=no_config&error_description=認証設定が見つかりません');
-            }
+        if (!clientId || !clientSecret || !redirectUri) {
+            console.error('❌ 認証設定が見つかりません');
+            return res.redirect('/?error=no_config&error_description=認証設定が見つかりません');
         }
         
         // アクセストークンを取得
@@ -157,14 +78,7 @@ router.get('/callback', async (req, res) => {
         req.session.userId = user_id;
         req.session.tokenExpiry = new Date(Date.now() + expires_in * 1000);
         
-        // 動的設定の場合は永続化（セッション管理）
-        if (req.session.tempFitbitConfig) {
-            req.session.fitbitConfig = req.session.tempFitbitConfig;
-            delete req.session.tempFitbitConfig; // 一時設定を削除
-            console.log('✅ 動的Fitbit認証成功 - ユーザーID:', user_id);
-        } else {
-            console.log('✅ 環境変数Fitbit認証成功 - ユーザーID:', user_id);
-        }
+        console.log('✅ Fitbit認証成功 - ユーザーID:', user_id);
         
         // ダッシュボードにリダイレクト
         res.redirect('/dashboard');
@@ -172,7 +86,7 @@ router.get('/callback', async (req, res) => {
     } catch (error) {
         console.error('❌ トークン取得エラー:', error.response?.data || error.message);
         const errorMessage = error.response?.data?.errors?.[0]?.message || 'トークンの取得に失敗しました';
-        res.redirect(`/setup?error=token_failed&error_description=${encodeURIComponent(errorMessage)}`);
+        res.redirect(`/?error=token_failed&error_description=${encodeURIComponent(errorMessage)}`);
     }
 });
 
@@ -200,16 +114,6 @@ router.get('/status', (req, res) => {
     });
 });
 
-// 認証状態確認（API用）
-router.get('/api/auth/status', (req, res) => {
-    const isAuthenticated = !!(req.session.accessToken && req.session.userId);
-    
-    res.json({
-        authenticated: isAuthenticated,
-        userId: req.session.userId || null,
-        tokenExpiry: req.session.tokenExpiry || null
-    });
-});
 
 // トークンリフレッシュ（内部使用）
 async function refreshAccessToken(session) {
@@ -217,20 +121,11 @@ async function refreshAccessToken(session) {
         throw new Error('No refresh token available');
     }
     
-    // 動的設定または環境変数から認証情報を取得
-    let clientId, clientSecret;
+    const clientId = process.env.FITBIT_CLIENT_ID;
+    const clientSecret = process.env.FITBIT_CLIENT_SECRET;
     
-    if (session.fitbitConfig) {
-        // 動的設定を使用
-        ({ clientId, clientSecret } = session.fitbitConfig);
-    } else {
-        // 環境変数を使用（従来方式）
-        clientId = process.env.FITBIT_CLIENT_ID;
-        clientSecret = process.env.FITBIT_CLIENT_SECRET;
-        
-        if (!clientId || !clientSecret) {
-            throw new Error('Fitbit client credentials not available');
-        }
+    if (!clientId || !clientSecret) {
+        throw new Error('Fitbit client credentials not available');
     }
     
     try {

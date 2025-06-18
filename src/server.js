@@ -44,34 +44,18 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
 
-// メインページ（設定画面）
+// メインページ
 app.get('/', (req, res) => {
     if (req.session.accessToken) {
         return res.redirect('/dashboard');
     }
-    res.sendFile(path.join(__dirname, '../public/setup.html'));
-});
-
-// 設定画面
-app.get('/setup', (req, res) => {
-    if (req.session.accessToken) {
-        return res.redirect('/dashboard');
-    }
-    res.sendFile(path.join(__dirname, '../public/setup.html'));
-});
-
-// ログイン画面（従来方式）
-app.get('/login', (req, res) => {
-    if (req.session.accessToken) {
-        return res.redirect('/dashboard');
-    }
-    res.sendFile(path.join(__dirname, '../public/login.html'));
+    res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // ダッシュボードページ
 app.get('/dashboard', (req, res) => {
     if (!req.session.accessToken) {
-        return res.redirect('/setup');
+        return res.redirect('/');
     }
     res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
