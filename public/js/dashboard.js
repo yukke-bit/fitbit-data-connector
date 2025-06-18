@@ -9,12 +9,16 @@ class FitbitDashboard {
 
     async init() {
         this.bindEvents();
+        this.addDebugLog('info', 'ダッシュボード初期化開始');
+        
         await this.loadUserProfile();
         await this.loadTodayData();
         await this.loadHeartRateData();
         await this.loadSleepData();
         await this.loadWeeklySummary();
         await this.loadDevices();
+        
+        this.addDebugLog('success', 'ダッシュボード初期化完了');
     }
 
     bindEvents() {
@@ -435,7 +439,10 @@ class FitbitDashboard {
     
     updateDebugDisplay() {
         const debugContent = document.getElementById('debug-content');
-        if (!debugContent) return;
+        if (!debugContent) {
+            console.warn('Debug content element not found');
+            return;
+        }
         
         const logsHtml = this.debugLogs.map(log => {
             const dataHtml = log.data ? `\n${log.data}` : '';
@@ -502,6 +509,13 @@ class FitbitDashboard {
 
 // DOM読み込み完了後に初期化
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM Content Loaded - initializing dashboard');
     const dashboard = new FitbitDashboard();
+    
+    // デバッグテスト
+    setTimeout(() => {
+        dashboard.addDebugLog('info', 'テストログ: デバッグ機能が動作しています');
+    }, 1000);
+    
     dashboard.startAutoRefresh();
 });
