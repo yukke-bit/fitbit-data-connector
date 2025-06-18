@@ -13,7 +13,7 @@ router.get('/login', (req, res) => {
         
         const clientId = process.env.FITBIT_CLIENT_ID;
         const redirectUri = process.env.FITBIT_REDIRECT_URL;
-        const scope = 'activity heartrate sleep profile weight nutrition';
+        const scope = 'profile activity sleep'; // 問題のあるスコープを段階的に除外
         
         console.log('📋 全環境変数確認:');
         console.log(`   NODE_ENV: ${process.env.NODE_ENV || '未設定'}`);
