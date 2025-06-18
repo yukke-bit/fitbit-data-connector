@@ -83,6 +83,7 @@
             <button onclick="testEnvVars()">環境変数確認</button>
             <button onclick="testAuthEndpoint()">認証エンドポイント確認</button>
             <button onclick="checkEnvironment()">Vercel環境変数詳細確認</button>
+            <button onclick="getAuthUrl()">🔗 認証URL直接確認</button>
         </div>
         
         <div id="log">ログ出力エリア
@@ -277,11 +278,71 @@
             }
         }
         
+        async function getAuthUrl() {
+            try {
+                log('🔗 認証URL直接確認中...');
+                
+                // 手動で認証URLを構築
+                const clientId = '23QFGK';
+                const redirectUri = 'https://fitbit-data-connector.vercel.app/auth/callback';
+                const scope = 'activity heartrate sleep profile weight nutrition';
+                
+                const authUrl = 'https://www.fitbit.com/oauth2/authorize?' + new URLSearchParams({
+                    response_type: 'code',
+                    client_id: clientId,
+                    redirect_uri: redirectUri,
+                    scope: scope,
+                    expires_in: '31536000'
+                });
+                
+                log('✅ 生成された認証URL:');
+                log(authUrl);
+                log('');
+                log('🔗 直接アクセス用（クリック可能）:');
+                log(`<a href="${authUrl}" target="_blank">Fitbit認証ページを開く</a>`);
+                
+                // URLをコピーできるようにする
+                try {
+                    await navigator.clipboard.writeText(authUrl);
+                    log('📋 認証URLをクリップボードにコピーしました');
+                } catch (e) {
+                    log('📋 クリップボードへのコピーに失敗');
+                }
+                
+            } catch (error) {
+                log(`❌ 認証URL生成エラー: ${error.message}`);
+            }
+        }
+        
+        // URLパラメータ確認関数
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const params = {};
+            for (const [key, value] of urlParams.entries()) {
+                params[key] = value;
+            }
+            
+            if (Object.keys(params).length > 0) {
+                log('🔍 URLパラメータ発見:');
+                log(JSON.stringify(params, null, 2));
+                
+                if (params.error) {
+                    log(`❌ エラー: ${params.error}`);
+                    log(`📝 詳細: ${params.error_description || 'なし'}`);
+                }
+            } else {
+                log('📄 URLパラメータなし');
+            }
+        }
+        
         // 初期化
         document.addEventListener('DOMContentLoaded', () => {
             log('🚀 テストページが読み込まれました');
             log('📍 現在のURL: ' + window.location.href);
             log('🌐 ユーザーエージェント: ' + navigator.userAgent.substring(0, 50) + '...');
+            
+            // URLパラメータをチェック
+            checkUrlParams();
         });
     </script>
 </body>
