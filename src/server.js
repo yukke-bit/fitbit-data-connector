@@ -91,4 +91,10 @@ app.listen(PORT, () => {
     console.log(`🌐 サーバー: http://localhost:${PORT}`);
     console.log(`📊 ダッシュボード: http://localhost:${PORT}/dashboard`);
     console.log(`🔧 環境: ${process.env.NODE_ENV || 'development'}`);
+    
+    // 環境変数デバッグ
+    console.log('📋 環境変数確認:');
+    console.log(`   FITBIT_CLIENT_ID: ${process.env.FITBIT_CLIENT_ID ? '設定済み' : '未設定'}`);
+    console.log(`   FITBIT_CLIENT_SECRET: ${process.env.FITBIT_CLIENT_SECRET ? '設定済み' : '未設定'}`);
+    console.log(`   FITBIT_REDIRECT_URL: ${process.env.FITBIT_REDIRECT_URL || '未設定'}`);
 });

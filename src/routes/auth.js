@@ -9,7 +9,7 @@ const FITBIT_TOKEN_URL = 'https://api.fitbit.com/oauth2/token';
 // OAuth認証開始（環境変数方式）
 router.get('/login', (req, res) => {
     const clientId = process.env.FITBIT_CLIENT_ID;
-    const redirectUri = process.env.FITBIT_REDIRECT_URI;
+    const redirectUri = process.env.FITBIT_REDIRECT_URL;
     const scope = 'activity heartrate sleep profile weight nutrition';
     
     if (!clientId || !redirectUri) {
