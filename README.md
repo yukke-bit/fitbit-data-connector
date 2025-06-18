@@ -52,6 +52,42 @@ npm run dev
 
 アプリケーションが `http://localhost:3000` で起動します。
 
+## 🌐 **Vercelデプロイ**
+
+### 1. Vercelアカウント設定
+1. [Vercel](https://vercel.com) でアカウント作成
+2. GitHubアカウントと連携
+
+### 2. プロジェクトデプロイ
+```bash
+# Vercel CLIをインストール（オプション）
+npm install -g vercel
+
+# Vercelダッシュボードから直接GitHubリポジトリをインポート
+# または、CLIを使用：
+vercel --prod
+```
+
+### 3. 環境変数設定
+Vercelダッシュボードの「Settings > Environment Variables」で以下を設定：
+
+```env
+FITBIT_CLIENT_ID=your-fitbit-client-id
+FITBIT_CLIENT_SECRET=your-fitbit-client-secret
+FITBIT_REDIRECT_URI=https://your-app-name.vercel.app/auth/callback
+SESSION_SECRET=your-super-secret-session-key
+NODE_ENV=production
+```
+
+### 4. Fitbitアプリ設定更新
+Fitbit Developer Consoleで：
+1. リダイレクトURIに `https://your-app-name.vercel.app/auth/callback` を追加
+2. 本番用ドメインを許可リストに追加
+
+### 5. デプロイ確認
+- `https://your-app-name.vercel.app` にアクセス
+- Fitbit認証とデータ取得をテスト
+
 ## 📁 **プロジェクト構造**
 
 ```

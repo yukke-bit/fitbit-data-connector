@@ -11,10 +11,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware設定
+const corsOrigins = process.env.NODE_ENV === 'production' 
+    ? [
+        `https://${process.env.VERCEL_URL}`,
+        /\.vercel\.app$/
+      ]
+    : ['http://localhost:3000'];
+
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? ['https://your-domain.com'] 
-        : ['http://localhost:3000'],
+    origin: corsOrigins,
     credentials: true
 }));
 
@@ -39,15 +44,26 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
 
-// メインページ
+// メインページ（ログイン画面）
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
+    if (req.session.accessToken) {
+        return res.redirect('/dashboard');
+    }
+    res.sendFile(path.join(__dirname, '../public/login.html'));
+});
+
+// ログイン画面
+app.get('/login', (req, res) => {
+    if (req.session.accessToken) {
+        return res.redirect('/dashboard');
+    }
+    res.sendFile(path.join(__dirname, '../public/login.html'));
 });
 
 // ダッシュボードページ
 app.get('/dashboard', (req, res) => {
     if (!req.session.accessToken) {
-        return res.redirect('/');
+        return res.redirect('/login');
     }
     res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
