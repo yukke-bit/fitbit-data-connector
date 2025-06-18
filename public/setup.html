@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitbit API設定 - データ連携</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-card">
+            <div class="setup-header">
+                <div class="app-logo">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <h1>Fitbit API設定</h1>
+                <p>あなたのFitbitアプリケーション情報を入力してください</p>
+            </div>
+
+            <div class="setup-content">
+                <!-- ステップ表示 -->
+                <div class="step-indicator">
+                    <div class="step active" data-step="1">
+                        <div class="step-number">1</div>
+                        <div class="step-title">API設定</div>
+                    </div>
+                    <div class="step" data-step="2">
+                        <div class="step-number">2</div>
+                        <div class="step-title">認証</div>
+                    </div>
+                    <div class="step" data-step="3">
+                        <div class="step-number">3</div>
+                        <div class="step-title">完了</div>
+                    </div>
+                </div>
+
+                <!-- フォーム -->
+                <form id="fitbit-setup-form" class="setup-form">
+                    <div class="form-group">
+                        <label for="client-id">
+                            <i class="fas fa-key"></i>
+                            Fitbit Client ID
+                        </label>
+                        <input 
+                            type="text" 
+                            id="client-id" 
+                            name="clientId"
+                            placeholder="例：23ABCD"
+                            required
+                        >
+                        <small class="help-text">
+                            Fitbit Developer Consoleから取得したClient IDを入力
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="client-secret">
+                            <i class="fas fa-lock"></i>
+                            Fitbit Client Secret
+                        </label>
+                        <input 
+                            type="password" 
+                            id="client-secret" 
+                            name="clientSecret"
+                            placeholder="秘密キーを入力"
+                            required
+                        >
+                        <button type="button" class="toggle-password" onclick="togglePassword('client-secret')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <small class="help-text">
+                            Client Secretは安全に管理されます
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="redirect-uri">
+                            <i class="fas fa-link"></i>
+                            リダイレクトURI
+                        </label>
+                        <input 
+                            type="url" 
+                            id="redirect-uri" 
+                            name="redirectUri"
+                            readonly
+                        >
+                        <small class="help-text">
+                            この値をFitbitアプリの設定にコピーしてください
+                        </small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="setup-submit">
+                            <i class="fas fa-arrow-right"></i>
+                            Fitbit認証を開始
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 説明セクション -->
+                <div class="setup-instructions">
+                    <h3><i class="fas fa-info-circle"></i> Fitbitアプリケーションの作成方法</h3>
+                    
+                    <div class="instruction-steps">
+                        <div class="instruction-step">
+                            <div class="step-num">1</div>
+                            <div class="step-content">
+                                <strong>Fitbit Developer Consoleにアクセス</strong>
+                                <p><a href="https://dev.fitbit.com/apps" target="_blank" rel="noopener">https://dev.fitbit.com/apps</a> を開く</p>
+                            </div>
+                        </div>
+
+                        <div class="instruction-step">
+                            <div class="step-num">2</div>
+                            <div class="step-content">
+                                <strong>新しいアプリを登録</strong>
+                                <p>「Register an App」をクリックしてアプリケーションを作成</p>
+                            </div>
+                        </div>
+
+                        <div class="instruction-step">
+                            <div class="step-num">3</div>
+                            <div class="step-content">
+                                <strong>設定を入力</strong>
+                                <ul>
+                                    <li><strong>Application Type:</strong> Personal</li>
+                                    <li><strong>Callback URL:</strong> 上記のリダイレクトURIをコピー</li>
+                                    <li><strong>Default Access Type:</strong> Read Only</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="instruction-step">
+                            <div class="step-num">4</div>
+                            <div class="step-content">
+                                <strong>Client ID/Secretを取得</strong>
+                                <p>作成されたアプリの詳細ページからClient IDとClient Secretをコピー</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ローディングモーダル -->
+    <div id="loading-modal" class="modal" style="display: none;">
+        <div class="modal-content loading-content">
+            <div class="loading-spinner"></div>
+            <h3>設定を保存中...</h3>
+            <p>しばらくお待ちください</p>
+        </div>
+    </div>
+
+    <!-- エラーモーダル -->
+    <div id="error-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" id="modal-close">&times;</span>
+            <h3><i class="fas fa-exclamation-triangle"></i> エラー</h3>
+            <p id="error-message">設定でエラーが発生しました。</p>
+            <button id="error-ok" class="btn btn-primary">OK</button>
+        </div>
+    </div>
+
+    <script src="/js/setup.js"></script>
+</body>
+</html>
