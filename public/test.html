@@ -184,26 +184,52 @@
                 log('🔐 認証エンドポイントテスト中...');
                 log('📍 /auth/login にアクセスして確認...');
                 
-                // 認証URLを確認（リダイレクトはされない）
+                // まず通常のfetchでエラーを確認
+                try {
+                    const normalResponse = await fetch('/auth/login');
+                    log(`通常fetch - ステータス: ${normalResponse.status}`);
+                    
+                    if (normalResponse.status >= 400) {
+                        const errorText = await normalResponse.text();
+                        log(`エラーレスポンス: ${errorText}`);
+                    }
+                } catch (fetchError) {
+                    log(`通常fetch失敗: ${fetchError.message}`);
+                }
+                
+                // 次にmanual redirectでテスト
                 const response = await fetch('/auth/login', {
                     method: 'GET',
                     redirect: 'manual' // リダイレクトを手動処理
                 });
                 
-                log(`ステータス: ${response.status}`);
+                log(`Manual redirect - ステータス: ${response.status}`);
                 log(`リダイレクト先: ${response.headers.get('location') || 'なし'}`);
+                log(`Response type: ${response.type}`);
+                log(`Response ok: ${response.ok}`);
                 
-                if (response.status === 302) {
+                if (response.status === 302 || response.status === 301) {
                     const location = response.headers.get('location');
                     if (location && location.includes('fitbit.com')) {
                         log('✅ Fitbit認証URLへのリダイレクト確認');
-                        log(`URL: ${location.substring(0, 100)}...`);
-                    } else {
+                        log(`URL: ${location.substring(0, 150)}...`);
+                    } else if (location) {
                         log(`❌ 予期しないリダイレクト: ${location}`);
+                    } else {
+                        log('❌ リダイレクト先が取得できません');
+                    }
+                } else if (response.status === 500) {
+                    try {
+                        const errorData = await response.json();
+                        log(`サーバーエラー詳細: ${JSON.stringify(errorData, null, 2)}`);
+                    } catch (e) {
+                        log('サーバーエラー（JSON解析失敗）');
                     }
                 }
             } catch (error) {
                 log(`❌ 認証エンドポイントテストエラー: ${error.message}`);
+                log(`エラータイプ: ${error.constructor.name}`);
+                log(`スタック: ${error.stack}`);
             }
         }
         

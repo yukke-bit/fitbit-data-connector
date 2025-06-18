@@ -37,6 +37,12 @@ app.use(session({
     }
 }));
 
+// リクエストログ追加
+app.use((req, res, next) => {
+    console.log(`📥 ${req.method} ${req.originalUrl} - ${new Date().toISOString()}`);
+    next();
+});
+
 // 静的ファイル配信
 app.use(express.static(path.join(__dirname, '../public')));
 
@@ -108,12 +114,6 @@ app.use((req, res) => {
         error: 'Not Found',
         message: `Route ${req.originalUrl} not found`
     });
-});
-
-// リクエストログ追加
-app.use((req, res, next) => {
-    console.log(`📥 ${req.method} ${req.originalUrl} - ${new Date().toISOString()}`);
-    next();
 });
 
 app.listen(PORT, () => {
