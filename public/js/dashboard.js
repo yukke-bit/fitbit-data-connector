@@ -3,6 +3,7 @@ class FitbitDashboard {
     constructor() {
         this.chart = null;
         this.currentChartType = 'steps';
+        this.debugLogs = [];
         this.init();
     }
 
@@ -41,12 +42,24 @@ class FitbitDashboard {
         modal?.addEventListener('click', (e) => {
             if (e.target === modal) this.hideErrorModal();
         });
+
+        // デバッグコントロール
+        const clearDebug = document.getElementById('clear-debug');
+        const copyDebug = document.getElementById('copy-debug');
+        const toggleDebug = document.getElementById('toggle-debug');
+
+        clearDebug?.addEventListener('click', () => this.clearDebugLog());
+        copyDebug?.addEventListener('click', () => this.copyDebugLog());
+        toggleDebug?.addEventListener('click', () => this.toggleDebugSection());
     }
 
     async loadUserProfile() {
         try {
+            this.addDebugLog('info', 'プロフィール取得開始');
             const response = await fetch('/api/profile');
             const data = await response.json();
+            
+            this.addDebugLog('success', 'プロフィールAPI応答', data);
 
             if (data.success) {
                 const profile = data.data;
@@ -57,19 +70,33 @@ class FitbitDashboard {
                 if (profile.avatar && profile.avatar !== '') {
                     userAvatar.innerHTML = `<img src="${profile.avatar}" alt="アバター" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
                 }
+                this.addDebugLog('success', 'プロフィール表示完了', { displayName: profile.displayName });
+            } else {
+                this.addDebugLog('error', 'プロフィール取得失敗', data);
             }
         } catch (error) {
             console.error('プロフィール読み込みエラー:', error);
+            this.addDebugLog('error', 'プロフィール読み込みエラー', error.message);
         }
     }
 
     async loadTodayData() {
         try {
+            this.addDebugLog('info', '今日の活動データ取得開始');
             const response = await fetch('/api/activity/today');
             const data = await response.json();
+            
+            this.addDebugLog('success', '今日の活動データAPI応答', data);
 
             if (data.success) {
                 const activity = data.data;
+                
+                this.addDebugLog('info', '活動データ詳細', {
+                    steps: activity.steps,
+                    calories: activity.calories,
+                    distance: activity.distance,
+                    activeMinutes: activity.activeMinutes
+                });
                 
                 this.updateSummaryCard('steps-value', activity.steps?.value || 0);
                 this.updateSummaryCard('calories-value', activity.calories?.value || 0);
@@ -80,9 +107,14 @@ class FitbitDashboard {
                 document.querySelectorAll('.summary-card').forEach(card => {
                     card.classList.remove('loading');
                 });
+                
+                this.addDebugLog('success', '今日の活動データ表示完了');
+            } else {
+                this.addDebugLog('error', '今日の活動データ取得失敗', data);
             }
         } catch (error) {
             console.error('今日のデータ読み込みエラー:', error);
+            this.addDebugLog('error', '今日のデータ読み込みエラー', error.message);
             this.showError('今日の活動データの読み込みに失敗しました。');
         }
     }
@@ -385,6 +417,78 @@ class FitbitDashboard {
 
     hideErrorModal() {
         document.getElementById('error-modal').style.display = 'none';
+    }
+
+    // デバッグ機能
+    addDebugLog(type, message, data = null) {
+        const timestamp = new Date().toLocaleTimeString('ja-JP');
+        const logEntry = {
+            timestamp,
+            type,
+            message,
+            data: data ? JSON.stringify(data, null, 2) : null
+        };
+        
+        this.debugLogs.push(logEntry);
+        this.updateDebugDisplay();
+    }
+    
+    updateDebugDisplay() {
+        const debugContent = document.getElementById('debug-content');
+        if (!debugContent) return;
+        
+        const logsHtml = this.debugLogs.map(log => {
+            const dataHtml = log.data ? `\n${log.data}` : '';
+            return `<div class="debug-entry">
+                <div class="debug-timestamp">[${log.timestamp}]</div>
+                <div class="debug-type-${log.type}">${log.message}${dataHtml}</div>
+            </div>`;
+        }).join('');
+        
+        debugContent.innerHTML = logsHtml || '<div class="debug-log">デバッグログがありません</div>';
+        
+        // 自動スクロール
+        debugContent.scrollTop = debugContent.scrollHeight;
+    }
+    
+    clearDebugLog() {
+        this.debugLogs = [];
+        this.updateDebugDisplay();
+        this.addDebugLog('info', 'デバッグログがクリアされました');
+    }
+    
+    async copyDebugLog() {
+        const debugText = this.debugLogs.map(log => {
+            const dataText = log.data ? `\n${log.data}` : '';
+            return `[${log.timestamp}] ${log.type.toUpperCase()}: ${log.message}${dataText}`;
+        }).join('\n\n');
+        
+        try {
+            await navigator.clipboard.writeText(debugText);
+            this.addDebugLog('success', 'デバッグログをクリップボードにコピーしました');
+        } catch (error) {
+            // フォールバック
+            const textArea = document.createElement('textarea');
+            textArea.value = debugText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            this.addDebugLog('success', 'デバッグログをクリップボードにコピーしました（フォールバック）');
+        }
+    }
+    
+    toggleDebugSection() {
+        const debugSection = document.getElementById('debug-section');
+        const toggleBtn = document.getElementById('toggle-debug');
+        
+        if (debugSection.classList.contains('debug-hidden')) {
+            debugSection.classList.remove('debug-hidden');
+            toggleBtn.textContent = '非表示';
+        } else {
+            debugSection.classList.add('debug-hidden');
+            toggleBtn.textContent = '表示';
+        }
     }
 
     // 自動更新機能
