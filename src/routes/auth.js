@@ -12,7 +12,12 @@ router.get('/login', (req, res) => {
     const redirectUri = process.env.FITBIT_REDIRECT_URL;
     const scope = 'activity heartrate sleep profile weight nutrition';
     
+    console.log('🔍 認証開始 - 環境変数確認:');
+    console.log(`   CLIENT_ID: ${clientId ? '設定済み (' + clientId + ')' : '未設定'}`);
+    console.log(`   REDIRECT_URI: ${redirectUri || '未設定'}`);
+    
     if (!clientId || !redirectUri) {
+        console.log('❌ 環境変数が不足しています');
         return res.redirect('/?error=config_missing&error_description=Fitbit設定が見つかりません');
     }
     
@@ -25,6 +30,7 @@ router.get('/login', (req, res) => {
     });
     
     console.log('🔐 Fitbit認証URL生成:', authUrl);
+    console.log('🚀 Fitbitにリダイレクト中...');
     res.redirect(authUrl);
 });
 

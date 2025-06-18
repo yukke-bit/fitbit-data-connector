@@ -80,6 +80,7 @@
         <div class="test-section">
             <h2>環境変数テスト</h2>
             <button onclick="testEnvVars()">環境変数確認</button>
+            <button onclick="testAuthEndpoint()">認証エンドポイント確認</button>
         </div>
         
         <div id="log">ログ出力エリア
@@ -174,6 +175,34 @@
                 log(`環境変数テスト: ${JSON.stringify(data, null, 2)}`);
             } catch (error) {
                 log(`❌ 環境変数テストエラー: ${error.message}`);
+            }
+        }
+        
+        async function testAuthEndpoint() {
+            try {
+                log('🔐 認証エンドポイントテスト中...');
+                log('📍 /auth/login にアクセスして確認...');
+                
+                // 認証URLを確認（リダイレクトはされない）
+                const response = await fetch('/auth/login', {
+                    method: 'GET',
+                    redirect: 'manual' // リダイレクトを手動処理
+                });
+                
+                log(`ステータス: ${response.status}`);
+                log(`リダイレクト先: ${response.headers.get('location') || 'なし'}`);
+                
+                if (response.status === 302) {
+                    const location = response.headers.get('location');
+                    if (location && location.includes('fitbit.com')) {
+                        log('✅ Fitbit認証URLへのリダイレクト確認');
+                        log(`URL: ${location.substring(0, 100)}...`);
+                    } else {
+                        log(`❌ 予期しないリダイレクト: ${location}`);
+                    }
+                }
+            } catch (error) {
+                log(`❌ 認証エンドポイントテストエラー: ${error.message}`);
             }
         }
         
