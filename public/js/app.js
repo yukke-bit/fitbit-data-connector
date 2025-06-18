@@ -10,60 +10,63 @@ class FitbitAuthApp {
     }
 
     bindEvents() {
-        const loginBtn = document.getElementById('login-btn');
-        if (loginBtn) {
-            loginBtn.addEventListener('click', this.handleLogin.bind(this));
+        const connectBtn = document.getElementById('connect-fitbit-btn');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', this.handleLogin.bind(this));
+        }
+        
+        const modalClose = document.getElementById('modal-close');
+        const errorOk = document.getElementById('error-ok');
+        
+        if (modalClose) {
+            modalClose.addEventListener('click', this.closeModal.bind(this));
+        }
+        
+        if (errorOk) {
+            errorOk.addEventListener('click', this.closeModal.bind(this));
         }
     }
 
     async checkAuthStatus() {
-        const loadingEl = document.getElementById('loading');
-        const authButtonsEl = document.getElementById('auth-buttons');
-        const authSuccessEl = document.getElementById('auth-success');
-
         try {
             const response = await fetch('/auth/status');
             const data = await response.json();
 
-            loadingEl.style.display = 'none';
-
             if (data.authenticated) {
-                // 既に認証済みの場合
-                authSuccessEl.style.display = 'block';
-                setTimeout(() => {
-                    window.location.href = '/dashboard';
-                }, 2000);
-            } else {
-                // 未認証の場合
-                authButtonsEl.style.display = 'block';
+                // 既に認証済みの場合、ダッシュボードにリダイレクト
+                window.location.href = '/dashboard';
             }
         } catch (error) {
             console.error('認証状態確認エラー:', error);
-            loadingEl.style.display = 'none';
-            authButtonsEl.style.display = 'block';
         }
     }
 
     handleLogin() {
-        // ログインボタンを無効化
-        const loginBtn = document.getElementById('login-btn');
-        loginBtn.disabled = true;
-        loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 認証中...';
+        // 接続ボタンを無効化
+        const connectBtn = document.getElementById('connect-fitbit-btn');
+        connectBtn.disabled = true;
+        connectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 認証中...';
+        
+        // ローディングモーダル表示
+        this.showLoadingModal();
 
         // Fitbit認証ページにリダイレクト
-        window.location.href = '/auth/login';
+        setTimeout(() => {
+            window.location.href = '/auth/login';
+        }, 1000);
     }
 
     // URLパラメータからエラーをチェック
     checkUrlErrors() {
         const urlParams = new URLSearchParams(window.location.search);
         const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
 
         if (error) {
             let errorMessage = '';
             switch (error) {
-                case 'auth_failed':
-                    errorMessage = 'Fitbit認証に失敗しました。もう一度お試しください。';
+                case 'access_denied':
+                    errorMessage = 'Fitbit認証がキャンセルされました。';
                     break;
                 case 'no_code':
                     errorMessage = '認証コードが取得できませんでした。';
@@ -71,46 +74,40 @@ class FitbitAuthApp {
                 case 'token_failed':
                     errorMessage = 'アクセストークンの取得に失敗しました。';
                     break;
+                case 'config_missing':
+                    errorMessage = 'Fitbit設定が見つかりません。';
+                    break;
                 default:
-                    errorMessage = '認証中にエラーが発生しました。';
+                    errorMessage = errorDescription || '認証中にエラーが発生しました。';
             }
 
-            this.showError(errorMessage);
+            this.showErrorModal(errorMessage);
         }
     }
 
-    showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #ff6b6b;
-            color: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-            z-index: 1000;
-            max-width: 400px;
-        `;
+    showLoadingModal() {
+        const modal = document.getElementById('loading-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+    
+    showErrorModal(message) {
+        const modal = document.getElementById('error-modal');
+        const errorMessage = document.getElementById('error-message');
         
-        errorDiv.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-exclamation-circle"></i>
-                <span>${message}</span>
-                <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; margin-left: auto;">&times;</button>
-            </div>
-        `;
-
-        document.body.appendChild(errorDiv);
-
-        // 5秒後に自動で消す
-        setTimeout(() => {
-            if (errorDiv.parentElement) {
-                errorDiv.remove();
-            }
-        }, 5000);
+        if (modal && errorMessage) {
+            errorMessage.textContent = message;
+            modal.style.display = 'flex';
+        }
+    }
+    
+    closeModal() {
+        const loadingModal = document.getElementById('loading-modal');
+        const errorModal = document.getElementById('error-modal');
+        
+        if (loadingModal) loadingModal.style.display = 'none';
+        if (errorModal) errorModal.style.display = 'none';
     }
 }
 
@@ -118,6 +115,13 @@ class FitbitAuthApp {
 document.addEventListener('DOMContentLoaded', () => {
     const app = new FitbitAuthApp();
     app.checkUrlErrors();
+    
+    // モーダルクリックイベント
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            app.closeModal();
+        }
+    });
 });
 
 // Service Worker登録（PWA対応）

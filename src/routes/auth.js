@@ -50,7 +50,7 @@ router.get('/callback', async (req, res) => {
         // 環境変数から認証情報を取得
         const clientId = process.env.FITBIT_CLIENT_ID;
         const clientSecret = process.env.FITBIT_CLIENT_SECRET;
-        const redirectUri = process.env.FITBIT_REDIRECT_URI;
+        const redirectUri = process.env.FITBIT_REDIRECT_URL;
         
         if (!clientId || !clientSecret || !redirectUri) {
             console.error('❌ 認証設定が見つかりません');

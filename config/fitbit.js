@@ -1,5 +1,10 @@
 // Fitbit API設定
 module.exports = {
+    // OAuth設定（環境変数から取得）
+    CLIENT_ID: process.env.FITBIT_CLIENT_ID,
+    CLIENT_SECRET: process.env.FITBIT_CLIENT_SECRET,
+    REDIRECT_URL: process.env.FITBIT_REDIRECT_URL,
+    
     // API URLs
     AUTH_URL: 'https://www.fitbit.com/oauth2/authorize',
     TOKEN_URL: 'https://api.fitbit.com/oauth2/token',
