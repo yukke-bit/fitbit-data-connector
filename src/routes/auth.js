@@ -107,11 +107,22 @@ router.get('/callback', async (req, res) => {
         req.session.tokenExpiry = new Date(Date.now() + expires_in * 1000);
         
         console.log('✅ Fitbit認証成功 - ユーザーID:', user_id);
-        console.log('💾 セッション保存完了');
-        console.log('🔄 ダッシュボードにリダイレクト開始');
+        console.log('💾 セッション保存:', {
+            sessionID: req.sessionID,
+            hasAccessToken: !!req.session.accessToken,
+            userId: req.session.userId
+        });
         
-        // ダッシュボードにリダイレクト
-        res.redirect('/dashboard');
+        // セッション保存を強制的に待つ
+        req.session.save((err) => {
+            if (err) {
+                console.error('❌ セッション保存エラー:', err);
+                return res.redirect('/?error=session_save_failed');
+            }
+            
+            console.log('🔄 セッション保存確認完了 - ダッシュボードにリダイレクト');
+            res.redirect('/dashboard');
+        });
         
     } catch (error) {
         console.error('❌ トークン取得エラー:', error.response?.data || error.message);

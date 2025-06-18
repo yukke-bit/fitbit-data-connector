@@ -26,15 +26,19 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// セッション設定
+// セッション設定（Vercel対応）
 app.use(session({
     secret: process.env.SESSION_SECRET || 'fitbit-prototype-secret',
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Vercelでは必要
+    saveUninitialized: true, // Vercelでは必要
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24時間
-    }
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24時間
+        sameSite: 'lax' // CSRF保護
+    },
+    // Vercel用の設定
+    name: 'fitbit.sid'
 }));
 
 // リクエストログ追加
