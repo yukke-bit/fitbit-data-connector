@@ -81,6 +81,7 @@
             <h2>環境変数テスト</h2>
             <button onclick="testEnvVars()">環境変数確認</button>
             <button onclick="testAuthEndpoint()">認証エンドポイント確認</button>
+            <button onclick="checkEnvironment()">Vercel環境変数詳細確認</button>
         </div>
         
         <div id="log">ログ出力エリア
@@ -203,6 +204,28 @@
                 }
             } catch (error) {
                 log(`❌ 認証エンドポイントテストエラー: ${error.message}`);
+            }
+        }
+        
+        async function checkEnvironment() {
+            try {
+                log('🔍 Vercel環境変数詳細確認中...');
+                const response = await fetch('/debug/env');
+                const data = await response.json();
+                log(`環境変数詳細: ${JSON.stringify(data, null, 2)}`);
+                
+                // 問題を特定
+                if (!data.environment.hasClientId) {
+                    log('❌ FITBIT_CLIENT_ID が設定されていません！');
+                }
+                if (!data.environment.hasRedirectUrl) {
+                    log('❌ FITBIT_REDIRECT_URL が設定されていません！');
+                }
+                if (data.environment.hasClientId && data.environment.hasRedirectUrl) {
+                    log('✅ 必須環境変数は設定されています');
+                }
+            } catch (error) {
+                log(`❌ 環境変数確認エラー: ${error.message}`);
             }
         }
         

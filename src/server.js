@@ -74,6 +74,25 @@ app.get('/health', (req, res) => {
     });
 });
 
+// 環境変数確認用エンドポイント
+app.get('/debug/env', (req, res) => {
+    res.json({
+        timestamp: new Date().toISOString(),
+        environment: {
+            NODE_ENV: process.env.NODE_ENV || 'undefined',
+            hasClientId: !!process.env.FITBIT_CLIENT_ID,
+            hasClientSecret: !!process.env.FITBIT_CLIENT_SECRET,
+            hasRedirectUrl: !!process.env.FITBIT_REDIRECT_URL,
+            clientIdValue: process.env.FITBIT_CLIENT_ID || 'undefined',
+            redirectUrlValue: process.env.FITBIT_REDIRECT_URL || 'undefined'
+        },
+        vercel: {
+            url: process.env.VERCEL_URL || 'undefined',
+            env: process.env.VERCEL_ENV || 'undefined'
+        }
+    });
+});
+
 // エラーハンドリング
 app.use((err, req, res, next) => {
     console.error('Error:', err);

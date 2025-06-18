@@ -8,30 +8,52 @@ const FITBIT_TOKEN_URL = 'https://api.fitbit.com/oauth2/token';
 
 // OAuth認証開始（環境変数方式）
 router.get('/login', (req, res) => {
-    const clientId = process.env.FITBIT_CLIENT_ID;
-    const redirectUri = process.env.FITBIT_REDIRECT_URL;
-    const scope = 'activity heartrate sleep profile weight nutrition';
-    
-    console.log('🔍 認証開始 - 環境変数確認:');
-    console.log(`   CLIENT_ID: ${clientId ? '設定済み (' + clientId + ')' : '未設定'}`);
-    console.log(`   REDIRECT_URI: ${redirectUri || '未設定'}`);
-    
-    if (!clientId || !redirectUri) {
-        console.log('❌ 環境変数が不足しています');
-        return res.redirect('/?error=config_missing&error_description=Fitbit設定が見つかりません');
+    try {
+        console.log('🔍 認証開始リクエスト受信');
+        
+        const clientId = process.env.FITBIT_CLIENT_ID;
+        const redirectUri = process.env.FITBIT_REDIRECT_URL;
+        const scope = 'activity heartrate sleep profile weight nutrition';
+        
+        console.log('📋 全環境変数確認:');
+        console.log(`   NODE_ENV: ${process.env.NODE_ENV || '未設定'}`);
+        console.log(`   FITBIT_CLIENT_ID: ${clientId ? '設定済み (' + clientId + ')' : '❌未設定'}`);
+        console.log(`   FITBIT_CLIENT_SECRET: ${process.env.FITBIT_CLIENT_SECRET ? '設定済み' : '❌未設定'}`);
+        console.log(`   FITBIT_REDIRECT_URL: ${redirectUri || '❌未設定'}`);
+        
+        if (!clientId || !redirectUri) {
+            console.log('❌ 必須環境変数が不足しています');
+            console.log('🔄 エラーページにリダイレクト');
+            return res.status(500).json({
+                error: 'Configuration Error',
+                message: 'Fitbit環境変数が設定されていません',
+                details: {
+                    clientId: !!clientId,
+                    redirectUri: !!redirectUri
+                }
+            });
+        }
+        
+        const authUrl = `${FITBIT_AUTH_URL}?` + new URLSearchParams({
+            response_type: 'code',
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            scope: scope,
+            expires_in: '31536000' // 1年
+        });
+        
+        console.log('✅ Fitbit認証URL生成成功:', authUrl);
+        console.log('🚀 Fitbitにリダイレクト実行');
+        res.redirect(authUrl);
+        
+    } catch (error) {
+        console.error('💥 認証開始処理でエラー発生:', error);
+        res.status(500).json({
+            error: 'Authentication Error',
+            message: '認証処理中にエラーが発生しました',
+            details: error.message
+        });
     }
-    
-    const authUrl = `${FITBIT_AUTH_URL}?` + new URLSearchParams({
-        response_type: 'code',
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        scope: scope,
-        expires_in: '31536000' // 1年
-    });
-    
-    console.log('🔐 Fitbit認証URL生成:', authUrl);
-    console.log('🚀 Fitbitにリダイレクト中...');
-    res.redirect(authUrl);
 });
 
 // OAuth コールバック処理
