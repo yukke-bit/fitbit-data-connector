@@ -60,6 +60,11 @@ app.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
 
+// テストページ
+app.get('/test', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/test.html'));
+});
+
 // ヘルスチェック
 app.get('/health', (req, res) => {
     res.json({
@@ -86,10 +91,17 @@ app.use((req, res) => {
     });
 });
 
+// リクエストログ追加
+app.use((req, res, next) => {
+    console.log(`📥 ${req.method} ${req.originalUrl} - ${new Date().toISOString()}`);
+    next();
+});
+
 app.listen(PORT, () => {
     console.log(`🏃‍♂️ Fitbit データ連携プロトタイプが起動しました`);
     console.log(`🌐 サーバー: http://localhost:${PORT}`);
     console.log(`📊 ダッシュボード: http://localhost:${PORT}/dashboard`);
+    console.log(`🔧 テストページ: http://localhost:${PORT}/test`);
     console.log(`🔧 環境: ${process.env.NODE_ENV || 'development'}`);
     
     // 環境変数デバッグ
@@ -97,4 +109,13 @@ app.listen(PORT, () => {
     console.log(`   FITBIT_CLIENT_ID: ${process.env.FITBIT_CLIENT_ID ? '設定済み' : '未設定'}`);
     console.log(`   FITBIT_CLIENT_SECRET: ${process.env.FITBIT_CLIENT_SECRET ? '設定済み' : '未設定'}`);
     console.log(`   FITBIT_REDIRECT_URL: ${process.env.FITBIT_REDIRECT_URL || '未設定'}`);
+    
+    // ファイル存在確認
+    console.log('📁 ファイル確認:');
+    const fs = require('fs');
+    const publicPath = path.join(__dirname, '../public');
+    console.log(`   public ディレクトリ: ${fs.existsSync(publicPath) ? '存在' : '不存在'}`);
+    console.log(`   index.html: ${fs.existsSync(path.join(publicPath, 'index.html')) ? '存在' : '不存在'}`);
+    console.log(`   dashboard.html: ${fs.existsSync(path.join(publicPath, 'dashboard.html')) ? '存在' : '不存在'}`);
+    console.log(`   test.html: ${fs.existsSync(path.join(publicPath, 'test.html')) ? '存在' : '不存在'}`);
 });

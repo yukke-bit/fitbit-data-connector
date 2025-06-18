@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テストページ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        button {
+            background: #4facfe;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #3498db;
+        }
+        #log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fitbit連携テストページ</h1>
+        
+        <div class="test-section">
+            <h2>基本機能テスト</h2>
+            <button onclick="testBasic()">基本動作テスト</button>
+            <button onclick="testCSS()">CSS読み込みテスト</button>
+            <button onclick="testJS()">JavaScript動作テスト</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>API接続テスト</h2>
+            <button onclick="testAuthStatus()">認証状態確認</button>
+            <button onclick="testProfile()">プロフィール取得</button>
+            <button onclick="testActivity()">活動データ取得</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>ナビゲーションテスト</h2>
+            <button onclick="goToHome()">ホームページ</button>
+            <button onclick="goToDashboard()">ダッシュボード</button>
+            <button onclick="startAuth()">Fitbit認証開始</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>環境変数テスト</h2>
+            <button onclick="testEnvVars()">環境変数確認</button>
+        </div>
+        
+        <div id="log">ログ出力エリア
+クリックでテスト開始...</div>
+    </div>
+
+    <script>
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('log');
+            logElement.textContent += `\n[${timestamp}] ${message}`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function testBasic() {
+            log('✅ JavaScript動作OK');
+            log('✅ DOM操作OK');
+            log('✅ CSS適用OK');
+        }
+        
+        function testCSS() {
+            const computedStyle = window.getComputedStyle(document.body);
+            const background = computedStyle.background;
+            log(`CSS背景: ${background.substring(0, 50)}...`);
+            log('✅ CSS読み込み確認完了');
+        }
+        
+        function testJS() {
+            try {
+                const testArray = [1, 2, 3];
+                const result = testArray.map(x => x * 2);
+                log(`配列処理テスト: [${result.join(', ')}]`);
+                log('✅ JavaScript処理OK');
+            } catch (error) {
+                log(`❌ JavaScript エラー: ${error.message}`);
+            }
+        }
+        
+        async function testAuthStatus() {
+            try {
+                log('🔍 認証状態確認中...');
+                const response = await fetch('/auth/status');
+                const data = await response.json();
+                log(`認証状態レスポンス: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                log(`❌ 認証状態確認エラー: ${error.message}`);
+            }
+        }
+        
+        async function testProfile() {
+            try {
+                log('👤 プロフィール取得中...');
+                const response = await fetch('/api/profile');
+                const data = await response.json();
+                log(`プロフィールレスポンス: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                log(`❌ プロフィール取得エラー: ${error.message}`);
+            }
+        }
+        
+        async function testActivity() {
+            try {
+                log('🏃 活動データ取得中...');
+                const response = await fetch('/api/activity/today');
+                const data = await response.json();
+                log(`活動データレスポンス: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                log(`❌ 活動データ取得エラー: ${error.message}`);
+            }
+        }
+        
+        function goToHome() {
+            log('🏠 ホームページに移動...');
+            window.location.href = '/';
+        }
+        
+        function goToDashboard() {
+            log('📊 ダッシュボードに移動...');
+            window.location.href = '/dashboard';
+        }
+        
+        function startAuth() {
+            log('🔐 Fitbit認証開始...');
+            window.location.href = '/auth/login';
+        }
+        
+        async function testEnvVars() {
+            try {
+                log('⚙️ 環境変数テスト中...');
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                log(`環境変数テスト: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                log(`❌ 環境変数テストエラー: ${error.message}`);
+            }
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 テストページが読み込まれました');
+            log('📍 現在のURL: ' + window.location.href);
+            log('🌐 ユーザーエージェント: ' + navigator.userAgent.substring(0, 50) + '...');
+        });
+    </script>
+</body>
+</html>

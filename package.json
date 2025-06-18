@@ -2,7 +2,7 @@
   "name": "fitbit-data-connector",
   "version": "1.0.0",
   "description": "Fitbit データ連携プロトタイプ - ヘルスデータの取得と可視化",
-  "main": "src/app.js",
+  "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
