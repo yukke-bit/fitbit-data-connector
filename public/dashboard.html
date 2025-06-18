@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Fitbit ダッシュボード</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dashboard-body">
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1 class="dashboard-title">
+                    <i class="fas fa-tachometer-alt"></i>
+                    ヘルスダッシュボード
+                </h1>
+                
+                <div class="user-info" id="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">読み込み中...</div>
+                        <div class="last-sync" id="last-sync">同期中...</div>
+                    </div>
+                    <button class="btn btn-outline logout-btn" id="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        ログアウト
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="dashboard-main">
+            <!-- 今日のサマリー -->
+            <section class="summary-section">
+                <h2 class="section-title">
+                    <i class="fas fa-calendar-day"></i>
+                    今日の活動
+                </h2>
+                
+                <div class="summary-grid" id="today-summary">
+                    <div class="summary-card loading">
+                        <div class="card-icon">
+                            <i class="fas fa-walking"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">歩数</div>
+                            <div class="card-value" id="steps-value">---</div>
+                            <div class="card-subtitle">歩</div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card loading">
+                        <div class="card-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">消費カロリー</div>
+                            <div class="card-value" id="calories-value">---</div>
+                            <div class="card-subtitle">kcal</div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card loading">
+                        <div class="card-icon">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">移動距離</div>
+                            <div class="card-value" id="distance-value">---</div>
+                            <div class="card-subtitle">km</div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card loading">
+                        <div class="card-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">アクティブ時間</div>
+                            <div class="card-value" id="active-minutes-value">---</div>
+                            <div class="card-subtitle">分</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 心拍数セクション -->
+            <section class="heartrate-section">
+                <h2 class="section-title">
+                    <i class="fas fa-heartbeat"></i>
+                    心拍数
+                </h2>
+                
+                <div class="heartrate-container">
+                    <div class="heartrate-summary" id="heartrate-summary">
+                        <div class="resting-hr">
+                            <div class="hr-label">安静時心拍数</div>
+                            <div class="hr-value" id="resting-hr-value">--</div>
+                            <div class="hr-unit">bpm</div>
+                        </div>
+                    </div>
+                    
+                    <div class="heartrate-zones" id="heartrate-zones">
+                        <!-- 心拍数ゾーンが動的に追加される -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 睡眠セクション -->
+            <section class="sleep-section">
+                <h2 class="section-title">
+                    <i class="fas fa-bed"></i>
+                    睡眠
+                </h2>
+                
+                <div class="sleep-container" id="sleep-container">
+                    <div class="sleep-summary loading">
+                        <div class="sleep-stat">
+                            <div class="stat-label">睡眠時間</div>
+                            <div class="stat-value" id="sleep-duration">---</div>
+                        </div>
+                        <div class="sleep-stat">
+                            <div class="stat-label">睡眠効率</div>
+                            <div class="stat-value" id="sleep-efficiency">---%</div>
+                        </div>
+                        <div class="sleep-stat">
+                            <div class="stat-label">入眠時間</div>
+                            <div class="stat-value" id="sleep-start">--:--</div>
+                        </div>
+                        <div class="sleep-stat">
+                            <div class="stat-label">起床時間</div>
+                            <div class="stat-value" id="sleep-end">--:--</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 週間トレンド -->
+            <section class="trends-section">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    週間トレンド
+                </h2>
+                
+                <div class="trends-container">
+                    <div class="chart-tabs">
+                        <button class="tab-btn active" data-chart="steps">歩数</button>
+                        <button class="tab-btn" data-chart="calories">カロリー</button>
+                        <button class="tab-btn" data-chart="sleep">睡眠</button>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- デバイス情報 -->
+            <section class="devices-section">
+                <h2 class="section-title">
+                    <i class="fas fa-mobile-alt"></i>
+                    接続デバイス
+                </h2>
+                
+                <div class="devices-container" id="devices-container">
+                    <div class="loading-message">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        デバイス情報を取得中...
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- エラーモーダル -->
+    <div class="modal" id="error-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> エラー</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="error-message">
+                エラーが発生しました。
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="error-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
