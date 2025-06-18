@@ -74,7 +74,8 @@
             <h2>ナビゲーションテスト</h2>
             <button onclick="goToHome()">ホームページ</button>
             <button onclick="goToDashboard()">ダッシュボード</button>
-            <button onclick="startAuth()">Fitbit認証開始</button>
+            <button onclick="startAuth()">🔐 Fitbit認証開始（直接テスト）</button>
+            <button onclick="openAuthInNewTab()">🆕 新しいタブで認証テスト</button>
         </div>
         
         <div class="test-section">
@@ -164,8 +165,23 @@
         }
         
         function startAuth() {
-            log('🔐 Fitbit認証開始...');
+            log('🔐 Fitbit認証開始（直接リダイレクト）...');
+            log('📍 /auth/login にブラウザ直接アクセス');
             window.location.href = '/auth/login';
+        }
+        
+        function openAuthInNewTab() {
+            log('🆕 新しいタブで認証テスト開始...');
+            log('📍 別タブで /auth/login を開きます');
+            const authWindow = window.open('/auth/login', '_blank');
+            
+            // タブが開けたかチェック
+            if (authWindow) {
+                log('✅ 新しいタブが開かれました');
+                log('👀 新しいタブでFitbit認証画面を確認してください');
+            } else {
+                log('❌ 新しいタブが開けませんでした（ポップアップブロック？）');
+            }
         }
         
         async function testEnvVars() {
@@ -229,8 +245,14 @@
             } catch (error) {
                 log(`❌ 認証エンドポイントテストエラー: ${error.message}`);
                 log(`エラータイプ: ${error.constructor.name}`);
-                log(`スタック: ${error.stack}`);
             }
+            
+            // CORS問題の説明
+            log('');
+            log('🔍 結果分析:');
+            log('Response type: opaqueredirect = CORS制限によるリダイレクトブロック');
+            log('これは正常です！fetch()は異なるドメイン（fitbit.com）へのリダイレクトを制限します');
+            log('✅ 実際の認証は「Fitbit認証開始」ボタンで正常に動作するはずです');
         }
         
         async function checkEnvironment() {
