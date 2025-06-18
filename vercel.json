@@ -12,6 +12,14 @@
   ],
   "routes": [
     {
+      "src": "/css/(.*)",
+      "dest": "/public/css/$1"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "/public/js/$1"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/src/server.js"
     },
@@ -20,7 +28,11 @@
       "dest": "/src/server.js"
     },
     {
-      "src": "/(.*)",
+      "src": "/dashboard",
+      "dest": "/src/server.js"
+    },
+    {
+      "src": "/",
       "dest": "/src/server.js"
     }
   ],
