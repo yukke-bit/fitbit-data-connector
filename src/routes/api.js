@@ -38,14 +38,17 @@ router.get('/activity/today', async (req, res) => {
             fitbitClient.getActivityData('minutesVeryActive', today)
         ]);
         
+        // デバッグログ
+        console.log('📊 取得したFitbitデータ:', { steps, calories, distance, activeMinutes });
+        
         res.json({
             success: true,
             data: {
                 date: today,
-                steps: steps,
-                calories: calories,
-                distance: distance,
-                activeMinutes: activeMinutes
+                steps: { value: steps?.value || 0 },
+                calories: { value: calories?.value || 0 },
+                distance: { value: (distance?.value || 0) },
+                activeMinutes: { value: activeMinutes?.value || 0 }
             }
         });
     } catch (error) {
