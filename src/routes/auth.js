@@ -33,8 +33,8 @@ router.get('/login', (req, res) => {
             response_type: 'code',
             client_id: clientId,
             redirect_uri: redirectUri,
-            scope: scope,
-            expires_in: '31536000' // 1年
+            scope: scope
+            // expires_inパラメータを削除（Fitbit OAuth仕様に含まれない）
         });
         
         console.log('✅ Fitbit認証URL生成成功:', authUrl);

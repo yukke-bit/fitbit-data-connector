@@ -291,8 +291,8 @@
                     response_type: 'code',
                     client_id: clientId,
                     redirect_uri: redirectUri,
-                    scope: scope,
-                    expires_in: '31536000'
+                    scope: scope
+                    // expires_inパラメータを削除（Fitbit OAuth仕様違反）
                 });
                 
                 log('✅ 生成された認証URL:');
