@@ -24,14 +24,9 @@ router.get('/login', (req, res) => {
         if (!clientId || !redirectUri) {
             console.log('❌ 必須環境変数が不足しています');
             console.log('🔄 エラーページにリダイレクト');
-            return res.status(500).json({
-                error: 'Configuration Error',
-                message: 'Fitbit環境変数が設定されていません',
-                details: {
-                    clientId: !!clientId,
-                    redirectUri: !!redirectUri
-                }
-            });
+            
+            // JSONレスポンスではなく、HTMLエラーページにリダイレクト
+            return res.redirect('/?error=config_missing&error_description=Fitbit環境変数が設定されていません');
         }
         
         const authUrl = `${FITBIT_AUTH_URL}?` + new URLSearchParams({
@@ -48,11 +43,10 @@ router.get('/login', (req, res) => {
         
     } catch (error) {
         console.error('💥 認証開始処理でエラー発生:', error);
-        res.status(500).json({
-            error: 'Authentication Error',
-            message: '認証処理中にエラーが発生しました',
-            details: error.message
-        });
+        console.error('💥 エラースタック:', error.stack);
+        
+        // JSONレスポンスではなく、HTMLエラーページにリダイレクト
+        return res.redirect(`/?error=server_error&error_description=${encodeURIComponent('認証処理中にエラーが発生しました: ' + error.message)}`);
     }
 });
 

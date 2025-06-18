@@ -116,6 +116,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const app = new FitbitAuthApp();
     app.checkUrlErrors();
     
+    // デバッグ: URLパラメータをコンソールに出力
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.toString()) {
+        console.log('🔍 ホームページURLパラメータ:', urlParams.toString());
+        for (const [key, value] of urlParams.entries()) {
+            console.log(`  ${key}: ${value}`);
+        }
+    }
+    
     // モーダルクリックイベント
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
