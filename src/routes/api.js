@@ -165,7 +165,8 @@ router.get('/summary/weekly', async (req, res) => {
     }
 });
 
-// デバイス情報取得
+// デバイス情報取得 (将来使用予定のためコメントアウト)
+/*
 router.get('/devices', async (req, res) => {
     try {
         const fitbitClient = new FitbitClient(req.accessToken);
@@ -183,6 +184,7 @@ router.get('/devices', async (req, res) => {
         });
     }
 });
+*/
 
 // APIステータス確認
 router.get('/status', (req, res) => {

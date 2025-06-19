@@ -4,6 +4,8 @@ class FitbitDashboard {
         this.chart = null;
         this.currentChartType = 'steps';
         this.debugLogs = [];
+        // 本番環境ではデバッグログを無効化
+        this.isProduction = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1') && !window.location.hostname.includes('dev');
         this.init();
     }
 
@@ -96,7 +98,8 @@ class FitbitDashboard {
         await this.loadHeartRateData();
         await this.loadSleepData();
         await this.loadWeeklySummary();
-        await this.loadDevices();
+        // デバイス情報の読み込みを無効化
+        // await this.loadDevices();
         
         this.addDebugLog('success', 'ダッシュボード初期化完了');
     }
@@ -298,54 +301,56 @@ class FitbitDashboard {
         }
     }
 
-    async loadDevices() {
-        try {
-            const response = await this.makeAuthenticatedRequest('/api/devices');
-            const data = await response.json();
+    // デバイス情報の読み込み処理を無効化
+    // async loadDevices() {
+    //     try {
+    //         const response = await this.makeAuthenticatedRequest('/api/devices');
+    //         const data = await response.json();
 
-            if (data.success) {
-                this.renderDevices(data.data);
-            }
-        } catch (error) {
-            console.error('デバイス情報読み込みエラー:', error);
-        }
-    }
+    //         if (data.success) {
+    //             this.renderDevices(data.data);
+    //         }
+    //     } catch (error) {
+    //         console.error('デバイス情報読み込みエラー:', error);
+    //     }
+    // }
 
-    renderDevices(devices) {
-        const container = document.getElementById('devices-container');
-        container.innerHTML = '';
+    // デバイス表示処理を無効化
+    // renderDevices(devices) {
+    //     const container = document.getElementById('devices-container');
+    //     container.innerHTML = '';
 
-        if (devices.length === 0) {
-            container.innerHTML = '<div class="loading-message">接続されているデバイスがありません</div>';
-            return;
-        }
+    //     if (devices.length === 0) {
+    //         container.innerHTML = '<div class="loading-message">接続されているデバイスがありません</div>';
+    //         return;
+    //     }
 
-        devices.forEach(device => {
-            const deviceEl = document.createElement('div');
-            deviceEl.className = 'device-card';
-            
-            const deviceIcon = this.getDeviceIcon(device.type);
-            const lastSync = new Date(device.lastSyncTime).toLocaleString('ja-JP');
-            
-            deviceEl.innerHTML = `
-                <div class="device-icon">
-                    <i class="${deviceIcon}"></i>
-                </div>
-                <div class="device-info">
-                    <div class="device-name">${device.deviceVersion}</div>
-                    <div class="device-status">最終同期: ${lastSync}</div>
-                </div>
-                <div class="battery-level">
-                    <div class="battery-circle" style="background: conic-gradient(#4facfe ${device.batteryLevel * 3.6}deg, #e9ecef ${device.batteryLevel * 3.6}deg)">
-                        ${device.batteryLevel}%
-                    </div>
-                    <div style="font-size: 0.8rem; color: #666;">バッテリー</div>
-                </div>
-            `;
-            
-            container.appendChild(deviceEl);
-        });
-    }
+    //     devices.forEach(device => {
+    //         const deviceEl = document.createElement('div');
+    //         deviceEl.className = 'device-card';
+    //         
+    //         const deviceIcon = this.getDeviceIcon(device.type);
+    //         const lastSync = new Date(device.lastSyncTime).toLocaleString('ja-JP');
+    //         
+    //         deviceEl.innerHTML = `
+    //             <div class="device-icon">
+    //                 <i class="${deviceIcon}"></i>
+    //             </div>
+    //             <div class="device-info">
+    //                 <div class="device-name">${device.deviceVersion}</div>
+    //                 <div class="device-status">最終同期: ${lastSync}</div>
+    //             </div>
+    //             <div class="battery-level">
+    //                 <div class="battery-circle" style="background: conic-gradient(#4facfe ${device.batteryLevel * 3.6}deg, #e9ecef ${device.batteryLevel * 3.6}deg)">
+    //                     ${device.batteryLevel}%
+    //                 </div>
+    //                 <div style="font-size: 0.8rem; color: #666;">バッテリー</div>
+    //             </div>
+    //         `;
+    //         
+    //         container.appendChild(deviceEl);
+    //     });
+    // }
 
     renderChart(type) {
         const ctx = document.getElementById('trendsChart').getContext('2d');
@@ -519,8 +524,13 @@ class FitbitDashboard {
         document.getElementById('error-modal').style.display = 'none';
     }
 
-    // デバッグ機能
+    // デバッグ機能（本番環境では無効化）
     addDebugLog(type, message, data = null) {
+        // 本番環境ではデバッグログを記録しない
+        if (this.isProduction) {
+            return;
+        }
+        
         const timestamp = new Date().toLocaleTimeString('ja-JP');
         const logEntry = {
             timestamp,
@@ -534,6 +544,11 @@ class FitbitDashboard {
     }
     
     updateDebugDisplay() {
+        // 本番環境ではデバッグ表示を更新しない
+        if (this.isProduction) {
+            return;
+        }
+        
         const debugContent = document.getElementById('debug-content');
         if (!debugContent) {
             console.warn('Debug content element not found');
@@ -620,10 +635,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM Content Loaded - initializing dashboard');
     const dashboard = new FitbitDashboard();
     
-    // デバッグテスト
-    setTimeout(() => {
-        dashboard.addDebugLog('info', 'テストログ: デバッグ機能が動作しています');
-    }, 1000);
+    // デバッグテスト（本番環境では実行されない）
+    if (!dashboard.isProduction) {
+        setTimeout(() => {
+            dashboard.addDebugLog('info', 'テストログ: デバッグ機能が動作しています');
+        }, 1000);
+    }
     
     dashboard.startAutoRefresh();
 });
