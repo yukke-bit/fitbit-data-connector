@@ -7,22 +7,22 @@ class FitbitDashboard {
         this.init();
     }
 
-    // LocalStorageからトークンを取得する関数
+    // 認証トークンを取得
     getAuthToken() {
-        const tokenData = localStorage.getItem('fitbit_token');
-        if (!tokenData) return null;
-        
         try {
+            const tokenData = localStorage.getItem('fitbit_token');
+            if (!tokenData) return null;
+            
             const parsed = JSON.parse(atob(tokenData));
             return parsed.accessToken;
         } catch (error) {
-            console.error('トークンの解析に失敗:', error);
-            localStorage.removeItem('fitbit_token');
+            console.error('トークン解析エラー:', error);
+            this.clearAuthToken();
             return null;
         }
     }
 
-    // 認証ヘッダーを作成する関数
+    // 認証ヘッダーを作成
     getAuthHeaders() {
         const token = this.getAuthToken();
         if (!token) {
@@ -35,17 +35,42 @@ class FitbitDashboard {
         };
     }
 
-    // トークンの有効性をチェックし、無効な場合はログインページにリダイレクト
+    // 認証トークンをクリア
+    clearAuthToken() {
+        localStorage.removeItem('fitbit_token');
+    }
+
+    // 認証エラー処理
     handleAuthError(error) {
         console.error('認証エラー:', error);
-        this.addDebugLog('error', '認証エラーが発生しました', error.message);
+        this.addDebugLog('error', '認証エラー', error.message);
         
-        // トークンを削除
-        localStorage.removeItem('fitbit_token');
-        
-        // ログインページにリダイレクト
+        this.clearAuthToken();
         alert('認証の有効期限が切れました。再度ログインしてください。');
-        window.location.href = '/login.html';
+        window.location.href = '/';
+    }
+
+    // 認証付きAPIリクエストを実行
+    async makeAuthenticatedRequest(url, options = {}) {
+        try {
+            const headers = this.getAuthHeaders();
+            const response = await fetch(url, {
+                ...options,
+                headers: { ...headers, ...options.headers }
+            });
+            
+            if (response.status === 401) {
+                throw new Error('認証が必要です');
+            }
+            
+            return response;
+        } catch (error) {
+            if (error.message.includes('認証')) {
+                this.handleAuthError(error);
+                throw error;
+            }
+            throw error;
+        }
     }
 
     async init() {
@@ -116,20 +141,7 @@ class FitbitDashboard {
         try {
             this.addDebugLog('info', 'プロフィール取得開始');
             
-            // 認証ヘッダーを取得
-            const headers = this.getAuthHeaders();
-            
-            const response = await fetch('/api/profile', {
-                method: 'GET',
-                headers: headers
-            });
-            
-            // 認証エラーの場合
-            if (response.status === 401) {
-                this.handleAuthError(new Error('認証が必要です'));
-                return;
-            }
-            
+            const response = await this.makeAuthenticatedRequest('/api/profile');
             const data = await response.json();
             this.addDebugLog('success', 'プロフィールAPI応答', data);
 
@@ -149,11 +161,6 @@ class FitbitDashboard {
         } catch (error) {
             console.error('プロフィール読み込みエラー:', error);
             this.addDebugLog('error', 'プロフィール読み込みエラー', error.message);
-            
-            // 認証エラーの場合の処理
-            if (error.message.includes('認証トークンがありません')) {
-                this.handleAuthError(error);
-            }
         }
     }
 
@@ -161,20 +168,7 @@ class FitbitDashboard {
         try {
             this.addDebugLog('info', '今日の活動データ取得開始');
             
-            // 認証ヘッダーを取得
-            const headers = this.getAuthHeaders();
-            
-            const response = await fetch('/api/activity/today', {
-                method: 'GET',
-                headers: headers
-            });
-            
-            // 認証エラーの場合
-            if (response.status === 401) {
-                this.handleAuthError(new Error('認証が必要です'));
-                return;
-            }
-            
+            const response = await this.makeAuthenticatedRequest('/api/activity/today');
             const data = await response.json();
             this.addDebugLog('success', '今日の活動データAPI応答', data);
 
@@ -206,30 +200,12 @@ class FitbitDashboard {
             console.error('今日のデータ読み込みエラー:', error);
             this.addDebugLog('error', '今日のデータ読み込みエラー', error.message);
             this.showError('今日の活動データの読み込みに失敗しました。');
-            
-            // 認証エラーの場合の処理
-            if (error.message.includes('認証トークンがありません')) {
-                this.handleAuthError(error);
-            }
         }
     }
 
     async loadHeartRateData() {
         try {
-            // 認証ヘッダーを取得
-            const headers = this.getAuthHeaders();
-            
-            const response = await fetch('/api/heartrate', {
-                method: 'GET',
-                headers: headers
-            });
-            
-            // 認証エラーの場合
-            if (response.status === 401) {
-                this.handleAuthError(new Error('認証が必要です'));
-                return;
-            }
-            
+            const response = await this.makeAuthenticatedRequest('/api/heartrate');
             const data = await response.json();
 
             if (data.success && data.data) {
@@ -247,11 +223,6 @@ class FitbitDashboard {
             }
         } catch (error) {
             console.error('心拍数データ読み込みエラー:', error);
-            
-            // 認証エラーの場合の処理
-            if (error.message.includes('認証トークンがありません')) {
-                this.handleAuthError(error);
-            }
         }
     }
 
@@ -283,20 +254,7 @@ class FitbitDashboard {
 
     async loadSleepData() {
         try {
-            // 認証ヘッダーを取得
-            const headers = this.getAuthHeaders();
-            
-            const response = await fetch('/api/sleep', {
-                method: 'GET',
-                headers: headers
-            });
-            
-            // 認証エラーの場合
-            if (response.status === 401) {
-                this.handleAuthError(new Error('認証が必要です'));
-                return;
-            }
-            
+            const response = await this.makeAuthenticatedRequest('/api/sleep');
             const data = await response.json();
 
             if (data.success && data.data) {
@@ -323,30 +281,12 @@ class FitbitDashboard {
             }
         } catch (error) {
             console.error('睡眠データ読み込みエラー:', error);
-            
-            // 認証エラーの場合の処理
-            if (error.message.includes('認証トークンがありません')) {
-                this.handleAuthError(error);
-            }
         }
     }
 
     async loadWeeklySummary() {
         try {
-            // 認証ヘッダーを取得
-            const headers = this.getAuthHeaders();
-            
-            const response = await fetch('/api/summary/weekly', {
-                method: 'GET',
-                headers: headers
-            });
-            
-            // 認証エラーの場合
-            if (response.status === 401) {
-                this.handleAuthError(new Error('認証が必要です'));
-                return;
-            }
-            
+            const response = await this.makeAuthenticatedRequest('/api/summary/weekly');
             const data = await response.json();
 
             if (data.success) {
@@ -355,30 +295,12 @@ class FitbitDashboard {
             }
         } catch (error) {
             console.error('週間サマリー読み込みエラー:', error);
-            
-            // 認証エラーの場合の処理
-            if (error.message.includes('認証トークンがありません')) {
-                this.handleAuthError(error);
-            }
         }
     }
 
     async loadDevices() {
         try {
-            // 認証ヘッダーを取得
-            const headers = this.getAuthHeaders();
-            
-            const response = await fetch('/api/devices', {
-                method: 'GET',
-                headers: headers
-            });
-            
-            // 認証エラーの場合
-            if (response.status === 401) {
-                this.handleAuthError(new Error('認証が必要です'));
-                return;
-            }
-            
+            const response = await this.makeAuthenticatedRequest('/api/devices');
             const data = await response.json();
 
             if (data.success) {
@@ -386,11 +308,6 @@ class FitbitDashboard {
             }
         } catch (error) {
             console.error('デバイス情報読み込みエラー:', error);
-            
-            // 認証エラーの場合の処理
-            if (error.message.includes('認証トークンがありません')) {
-                this.handleAuthError(error);
-            }
         }
     }
 

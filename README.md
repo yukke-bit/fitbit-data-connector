@@ -1,13 +1,14 @@
-# 🏃‍♂️ Fitbit データ連携プロトタイプ
+# 🏃‍♂️ Fitbit データ連携アプリ
 
-Fitbit Web APIを使用してヘルスデータを取得・可視化するプロトタイプアプリケーション
+Fitbit Web APIを使用してヘルスデータを取得・可視化するWebアプリケーション
 
 ## 🎯 **機能概要**
 
-- **Fitbit OAuth認証** - 安全なアカウント連携
-- **ヘルスデータ取得** - 歩数、心拍数、睡眠データなど
-- **リアルタイム表示** - ダッシュボードでデータ可視化
-- **履歴管理** - 日次・週次・月次データの管理
+- **🔐 安全な認証** - OAuth 2.0 + Bearer Token認証
+- **📊 ヘルスデータ可視化** - 歩数、心拍数、睡眠データの表示
+- **⚡ リアルタイム更新** - 5分間隔での自動データ更新
+- **☁️ クラウド対応** - Vercelサーバーレス環境で動作
+- **📱 レスポンシブ対応** - PC・スマートフォン両対応
 
 ## 📊 **対応データ**
 
@@ -28,8 +29,11 @@ npm install
 
 ### 2. Fitbitアプリ設定
 1. [Fitbit Developer Console](https://dev.fitbit.com/apps) でアプリを登録
-2. `Client ID` と `Client Secret` を取得
-3. リダイレクトURIを `http://localhost:3000/auth/callback` に設定
+2. アプリケーションタイプ: **Server**
+3. `Client ID` と `Client Secret` を取得
+4. **重要**: リダイレクトURIを正確に設定
+   - 開発環境: `http://localhost:3000/auth/callback`
+   - 本番環境: `https://your-app-name.vercel.app/auth/callback`
 
 ### 3. 環境変数設定
 ```bash
@@ -40,16 +44,21 @@ cp .env.example .env
 ```env
 FITBIT_CLIENT_ID=your-client-id
 FITBIT_CLIENT_SECRET=your-client-secret
-FITBIT_REDIRECT_URI=http://localhost:3000/auth/callback
-SESSION_SECRET=your-session-secret
+FITBIT_REDIRECT_URL=http://localhost:3000/auth/callback
+SESSION_SECRET=your-secure-session-secret
 PORT=3000
+NODE_ENV=development
 ```
 
-**重要**: すべてのユーザーが同じFitbitアプリケーションを使用します。
+⚠️ **セキュリティ注意**: `.env` ファイルはGitに含めないでください
 
 ### 4. サーバー起動
 ```bash
+# 開発環境
 npm run dev
+
+# 本番環境
+npm start
 ```
 
 アプリケーションが `http://localhost:3000` で起動します。
@@ -125,39 +134,88 @@ fitbit-data-connector/
     └── api.md              # API ドキュメント
 ```
 
-## 🔧 **開発ガイド**
+## 🏗️ **アーキテクチャ**
 
-### Fitbit API の使用例
-```javascript
-// 今日の歩数を取得
-const steps = await fitbitClient.getActivityData('steps', 'today');
+### 認証フロー
+```mermaid
+sequenceDiagram
+    participant U as ユーザー
+    participant A as アプリ
+    participant F as Fitbit API
+    participant L as LocalStorage
 
-// 過去7日間の心拍数データを取得
-const heartRate = await fitbitClient.getHeartRateData('7d');
-
-// 睡眠データを取得
-const sleep = await fitbitClient.getSleepData('today');
+    U->>A: 1. ログイン要求
+    A->>F: 2. OAuth認証リクエスト
+    F->>U: 3. 認証画面表示
+    U->>F: 4. 認証承認
+    F->>A: 5. 認証コード返却
+    A->>F: 6. アクセストークン取得
+    F->>A: 7. アクセストークン返却
+    A->>L: 8. トークンをLocalStorageに保存
+    A->>U: 9. ダッシュボード表示
+    U->>A: 10. APIリクエスト (Bearer Token)
+    A->>F: 11. Fitbitデータ取得
 ```
 
-### 新しいデータタイプの追加
-1. `src/services/fitbitClient.js` にメソッド追加
-2. `src/routes/api.js` にエンドポイント追加
-3. `public/js/app.js` にフロントエンド処理追加
+### 技術スタック
+- **フロントエンド**: Vanilla JavaScript + Chart.js
+- **バックエンド**: Node.js + Express.js
+- **認証**: OAuth 2.0 + Bearer Token
+- **ストレージ**: LocalStorage (クライアント)
+- **デプロイ**: Vercel (サーバーレス)
+
+## 🔧 **開発ガイド**
+
+### APIエンドポイント
+```javascript
+// 認証関連
+GET  /auth/login     // OAuth認証開始
+GET  /auth/callback  // OAuth認証コールバック
+POST /auth/logout    // ログアウト
+
+// データ取得関連
+GET  /api/profile           // ユーザープロフィール
+GET  /api/activity/today    // 今日の活動データ
+GET  /api/heartrate         // 心拍数データ
+GET  /api/sleep             // 睡眠データ
+GET  /api/devices           // デバイス情報
+
+// システム関連
+GET  /health               // ヘルスチェック
+GET  /debug/env           // 環境変数確認 (開発環境のみ)
+```
+
+### 新しいデータタイプの追加手順
+1. **サーバーサイド**: `src/services/fitbitClient.js` にメソッド追加
+2. **APIルート**: `src/routes/api.js` にエンドポイント追加
+3. **フロントエンド**: `public/js/dashboard.js` にデータ表示処理追加
 
 ## 🔐 **セキュリティ**
 
-- OAuth 2.0 による安全な認証
-- セッション管理でトークン保護
-- CORS 設定によるオリジン制限
-- 環境変数による機密情報管理
+- **OAuth 2.0認証** - Fitbit公式認証フロー
+- **Bearer Token** - セッションレスなトークンベース認証
+- **CORS設定** - オリジン制限による不正アクセス防止
+- **環境変数管理** - 機密情報の安全な管理
+- **XSS保護** - サニタイズされたデータ表示
 
-## 📈 **今後の拡張予定**
+## 📈 **ロードマップ**
 
-- [ ] データベース連携（PostgreSQL/MongoDB）
-- [ ] リアルタイム通知機能
-- [ ] カスタムダッシュボード
-- [ ] データエクスポート機能
-- [ ] モバイルアプリ対応
+### 🚀 短期改善
+- [ ] エラーハンドリングの強化
+- [ ] ユーザビリティの改善
+- [ ] パフォーマンス最適化
+
+### 🎯 中期機能追加
+- [ ] データベース連携（MongoDB/PostgreSQL）
+- [ ] データエクスポート機能（CSV/JSON）
+- [ ] 詳細な統計・分析機能
+- [ ] 複数デバイス対応
+
+### 🌟 長期ビジョン
+- [ ] リアルタイム通知システム
+- [ ] カスタムダッシュボード機能
+- [ ] モバイルアプリ開発
+- [ ] 他のヘルスケアAPI連携
 
 ## 🤝 **コントリビューション**
 

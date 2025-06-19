@@ -64,75 +64,113 @@ app.get('/', (req, res) => {
 
 // ダッシュボードページ
 app.get('/dashboard', (req, res) => {
-    console.log('📊 ダッシュボードアクセス - デバッグバージョン 20250619-2');
-    console.log('🔥 Vercelログテスト: この行が見えれば正常にログ出力されています');
-    console.log('🔍 ダッシュボード セッション詳細確認:', {
-        sessionID: req.sessionID,
-        hasAccessToken: !!req.session.accessToken,
-        accessTokenLength: req.session.accessToken ? req.session.accessToken.length : 0,
-        accessTokenPreview: req.session.accessToken ? req.session.accessToken.substring(0, 20) + '...' : 'なし',
-        userId: req.session.userId,
-        tokenExpiry: req.session.tokenExpiry,
-        sessionKeys: Object.keys(req.session),
-        hasTokenParam: !!req.query.token,
-        sessionData: JSON.stringify(req.session)
-    });
+    console.log('📊 ダッシュボードアクセス');
     
-    // URLパラメータからトークンをチェック（Vercel対応）
+    // OAuth認証後のトークンパラメータをチェック
     if (req.query.token) {
-        try {
-            const tokenData = JSON.parse(Buffer.from(req.query.token, 'base64').toString());
-            console.log('🔄 URLパラメータからトークン復元');
-            
-            // セッションに保存を再試行
-            req.session.accessToken = tokenData.accessToken;
-            req.session.refreshToken = tokenData.refreshToken;
-            req.session.userId = tokenData.userId;
-            req.session.tokenExpiry = new Date(tokenData.expires);
-            
-            console.log('✅ トークン復元完了 - LocalStorageに保存してダッシュボード表示');
-            
-            // LocalStorageにトークンを保存するスクリプトを含むHTMLを返す
-            return res.send(`
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Fitbit データ連携 - ダッシュボード</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-    <div style="text-align: center; padding: 50px;">
-        <h2>🔄 認証完了 - ダッシュボードに移動中...</h2>
-        <p>お待ちください...</p>
-    </div>
-    <script>
-        // トークンをLocalStorageに保存
-        localStorage.setItem('fitbit_token', '${req.query.token}');
-        console.log('✅ トークンをLocalStorageに保存しました');
-        
-        // ダッシュボードページにリダイレクト
-        setTimeout(() => {
-            window.location.replace('/dashboard.html');
-        }, 1000);
-    </script>
-</body>
-</html>
-            `);
-        } catch (error) {
-            console.error('❌ トークン復元エラー:', error);
-        }
+        return handleOAuthCallback(req, res);
     }
     
-    // セッションベースの認証チェック（後方互換性のため）
+    // 既存のセッション認証をチェック（後方互換性）
     if (!req.session.accessToken) {
-        console.log('❌ アクセストークンなし - ホームにリダイレクト');
+        console.log('❌ 認証が必要です');
         return res.redirect('/');
     }
     
     console.log('✅ 認証済み - ダッシュボード表示');
     res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
+
+// OAuth認証後のトークン処理
+function handleOAuthCallback(req, res) {
+    try {
+        const tokenData = JSON.parse(Buffer.from(req.query.token, 'base64').toString());
+        console.log('🔄 OAuth認証トークンを処理中');
+        
+        // セッションにも保存（後方互換性のため）
+        req.session.accessToken = tokenData.accessToken;
+        req.session.refreshToken = tokenData.refreshToken;
+        req.session.userId = tokenData.userId;
+        req.session.tokenExpiry = new Date(tokenData.expires);
+        
+        console.log('✅ トークンをLocalStorageに保存してダッシュボードにリダイレクト');
+        
+        // トークンをLocalStorageに保存するスクリプトを返す
+        return res.send(generateTokenSaveHTML(req.query.token));
+        
+    } catch (error) {
+        console.error('❌ OAuth認証トークン処理エラー:', error);
+        return res.redirect('/?error=invalid_token');
+    }
+}
+
+// LocalStorageにトークンを保存するHTMLを生成
+function generateTokenSaveHTML(token) {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fitbit データ連携 - 認証完了</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            text-align: center; 
+            padding: 50px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🎉 認証完了</h2>
+        <div class="spinner"></div>
+        <p>ダッシュボードに移動中...</p>
+    </div>
+    <script>
+        try {
+            localStorage.setItem('fitbit_token', '${token}');
+            console.log('✅ 認証トークンをLocalStorageに保存しました');
+            
+            setTimeout(() => {
+                window.location.replace('/dashboard.html');
+            }, 1500);
+        } catch (error) {
+            console.error('❌ トークン保存エラー:', error);
+            window.location.href = '/?error=token_save_failed';
+        }
+    </script>
+</body>
+</html>`;
+}
 
 // テストページ
 app.get('/test', (req, res) => {
@@ -141,38 +179,45 @@ app.get('/test', (req, res) => {
 
 // ヘルスチェック
 app.get('/health', (req, res) => {
-    console.log('🏥 ヘルスチェック実行 - サーバーサイドログテスト');
-    console.log('🔍 Node環境:', process.env.NODE_ENV);
-    console.log('🔍 Vercel環境:', process.env.VERCEL_ENV);
-    
-    res.json({
+    const healthData = {
         status: 'OK',
         timestamp: new Date().toISOString(),
         version: require('../package.json').version,
         environment: process.env.NODE_ENV || 'development',
-        vercel_env: process.env.VERCEL_ENV,
-        message: 'サーバーサイド処理が正常に動作しています'
-    });
+        uptime: process.uptime()
+    };
+    
+    if (process.env.NODE_ENV === 'development') {
+        healthData.debug = {
+            vercel_env: process.env.VERCEL_ENV,
+            hasClientId: !!process.env.FITBIT_CLIENT_ID,
+            hasClientSecret: !!process.env.FITBIT_CLIENT_SECRET
+        };
+    }
+    
+    res.json(healthData);
 });
 
-// 環境変数確認用エンドポイント
-app.get('/debug/env', (req, res) => {
-    res.json({
-        timestamp: new Date().toISOString(),
-        environment: {
-            NODE_ENV: process.env.NODE_ENV || 'undefined',
-            hasClientId: !!process.env.FITBIT_CLIENT_ID,
-            hasClientSecret: !!process.env.FITBIT_CLIENT_SECRET,
-            hasRedirectUrl: !!process.env.FITBIT_REDIRECT_URL,
-            clientIdValue: process.env.FITBIT_CLIENT_ID || 'undefined',
-            redirectUrlValue: process.env.FITBIT_REDIRECT_URL || 'undefined'
-        },
-        vercel: {
-            url: process.env.VERCEL_URL || 'undefined',
-            env: process.env.VERCEL_ENV || 'undefined'
-        }
+// 開発環境のみ: 環境変数確認用エンドポイント
+if (process.env.NODE_ENV === 'development') {
+    app.get('/debug/env', (req, res) => {
+        res.json({
+            timestamp: new Date().toISOString(),
+            environment: {
+                NODE_ENV: process.env.NODE_ENV,
+                hasClientId: !!process.env.FITBIT_CLIENT_ID,
+                hasClientSecret: !!process.env.FITBIT_CLIENT_SECRET,
+                hasRedirectUrl: !!process.env.FITBIT_REDIRECT_URL,
+                clientIdValue: process.env.FITBIT_CLIENT_ID,
+                redirectUrlValue: process.env.FITBIT_REDIRECT_URL
+            },
+            vercel: {
+                url: process.env.VERCEL_URL,
+                env: process.env.VERCEL_ENV
+            }
+        });
     });
-});
+}
 
 // エラーハンドリング
 app.use((err, req, res, next) => {
@@ -192,24 +237,25 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`🏃‍♂️ Fitbit データ連携プロトタイプが起動しました`);
+    console.log(`🚀 Fitbit データ連携アプリが起動しました`);
     console.log(`🌐 サーバー: http://localhost:${PORT}`);
     console.log(`📊 ダッシュボード: http://localhost:${PORT}/dashboard`);
-    console.log(`🔧 テストページ: http://localhost:${PORT}/test`);
+    console.log(`🏥 ヘルスチェック: http://localhost:${PORT}/health`);
     console.log(`🔧 環境: ${process.env.NODE_ENV || 'development'}`);
     
-    // 環境変数デバッグ
-    console.log('📋 環境変数確認:');
-    console.log(`   FITBIT_CLIENT_ID: ${process.env.FITBIT_CLIENT_ID ? '設定済み' : '未設定'}`);
-    console.log(`   FITBIT_CLIENT_SECRET: ${process.env.FITBIT_CLIENT_SECRET ? '設定済み' : '未設定'}`);
-    console.log(`   FITBIT_REDIRECT_URL: ${process.env.FITBIT_REDIRECT_URL || '未設定'}`);
+    // 環境変数の基本チェック
+    const envStatus = {
+        clientId: !!process.env.FITBIT_CLIENT_ID,
+        clientSecret: !!process.env.FITBIT_CLIENT_SECRET,
+        redirectUrl: !!process.env.FITBIT_REDIRECT_URL
+    };
     
-    // ファイル存在確認
-    console.log('📁 ファイル確認:');
-    const fs = require('fs');
-    const publicPath = path.join(__dirname, '../public');
-    console.log(`   public ディレクトリ: ${fs.existsSync(publicPath) ? '存在' : '不存在'}`);
-    console.log(`   index.html: ${fs.existsSync(path.join(publicPath, 'index.html')) ? '存在' : '不存在'}`);
-    console.log(`   dashboard.html: ${fs.existsSync(path.join(publicPath, 'dashboard.html')) ? '存在' : '不存在'}`);
-    console.log(`   test.html: ${fs.existsSync(path.join(publicPath, 'test.html')) ? '存在' : '不存在'}`);
+    console.log('📋 設定状況:', 
+        Object.entries(envStatus).every(([, v]) => v) ? '✅ すべて設定済み' : '⚠️ 一部未設定'
+    );
+    
+    // 開発環境でのみ詳細表示
+    if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 開発モード - /debug/env で詳細確認可能');
+    }
 });

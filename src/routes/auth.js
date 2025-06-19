@@ -6,49 +6,60 @@ const FITBIT_BASE_URL = 'https://api.fitbit.com';
 const FITBIT_AUTH_URL = 'https://www.fitbit.com/oauth2/authorize';
 const FITBIT_TOKEN_URL = 'https://api.fitbit.com/oauth2/token';
 
-// OAuth認証開始（環境変数方式）
+// OAuth認証開始
 router.get('/login', (req, res) => {
     try {
-        console.log('🔍 認証開始リクエスト受信');
+        console.log('🔑 OAuth認証開始');
         
-        const clientId = process.env.FITBIT_CLIENT_ID;
-        const redirectUri = process.env.FITBIT_REDIRECT_URL;
-        const scope = 'profile activity sleep'; // 問題のあるスコープを段階的に除外
+        const { clientId, redirectUri, isConfigValid } = validateFitbitConfig();
         
-        console.log('📋 全環境変数確認:');
-        console.log(`   NODE_ENV: ${process.env.NODE_ENV || '未設定'}`);
-        console.log(`   FITBIT_CLIENT_ID: ${clientId ? '設定済み (' + clientId + ')' : '❌未設定'}`);
-        console.log(`   FITBIT_CLIENT_SECRET: ${process.env.FITBIT_CLIENT_SECRET ? '設定済み' : '❌未設定'}`);
-        console.log(`   FITBIT_REDIRECT_URL: ${redirectUri || '❌未設定'}`);
-        
-        if (!clientId || !redirectUri) {
-            console.log('❌ 必須環境変数が不足しています');
-            console.log('🔄 エラーページにリダイレクト');
-            
-            // JSONレスポンスではなく、HTMLエラーページにリダイレクト
-            return res.redirect('/?error=config_missing&error_description=Fitbit環境変数が設定されていません');
+        if (!isConfigValid) {
+            console.log('❌ Fitbit設定が不正です');
+            return res.redirect('/?error=config_missing&error_description=Fitbit設定が不完全です');
         }
         
-        const authUrl = `${FITBIT_AUTH_URL}?` + new URLSearchParams({
-            response_type: 'code',
-            client_id: clientId,
-            redirect_uri: redirectUri,
-            scope: scope
-            // expires_inパラメータを削除（Fitbit OAuth仕様に含まれない）
-        });
+        const authUrl = buildFitbitAuthUrl(clientId, redirectUri);
+        console.log('✅ 認証URLを生成してリダイレクト');
         
-        console.log('✅ Fitbit認証URL生成成功:', authUrl);
-        console.log('🚀 Fitbitにリダイレクト実行');
         res.redirect(authUrl);
         
     } catch (error) {
-        console.error('💥 認証開始処理でエラー発生:', error);
-        console.error('💥 エラースタック:', error.stack);
-        
-        // JSONレスポンスではなく、HTMLエラーページにリダイレクト
-        return res.redirect(`/?error=server_error&error_description=${encodeURIComponent('認証処理中にエラーが発生しました: ' + error.message)}`);
+        console.error('❌ OAuth認証開始エラー:', error.message);
+        return res.redirect(`/?error=server_error&error_description=${encodeURIComponent('認証処理中にエラーが発生しました')}`);
     }
 });
+
+// Fitbit設定を検証
+function validateFitbitConfig() {
+    const clientId = process.env.FITBIT_CLIENT_ID;
+    const redirectUri = process.env.FITBIT_REDIRECT_URL;
+    const clientSecret = process.env.FITBIT_CLIENT_SECRET;
+    
+    const isConfigValid = !!(clientId && redirectUri && clientSecret);
+    
+    if (process.env.NODE_ENV === 'development') {
+        console.log('📋 Fitbit設定確認:', {
+            hasClientId: !!clientId,
+            hasClientSecret: !!clientSecret,
+            hasRedirectUri: !!redirectUri,
+            redirectUri: redirectUri
+        });
+    }
+    
+    return { clientId, redirectUri, clientSecret, isConfigValid };
+}
+
+// Fitbit認証URLを構築
+function buildFitbitAuthUrl(clientId, redirectUri) {
+    const scope = 'profile activity heartrate sleep'; // 必要なスコープ
+    
+    return `${FITBIT_AUTH_URL}?` + new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        scope: scope
+    });
+}
 
 // OAuth コールバック処理
 router.get('/callback', async (req, res) => {
@@ -206,68 +217,73 @@ async function refreshAccessToken(session) {
 
 // 認証ミドルウェア
 function requireAuth(req, res, next) {
-    console.log('🔐 認証ミドルウェア実行');
-    
-    let accessToken = null;
-    let tokenSource = '';
-    
-    // 1. Authorization ヘッダーからBearerトークンをチェック（優先）
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        accessToken = authHeader.substring(7); // "Bearer " を除去
-        tokenSource = 'Bearer Token';
-        console.log('✅ Bearer トークンを検出:', accessToken.substring(0, 20) + '...');
-    }
-    // 2. セッションからトークンをチェック（後方互換性）
-    else if (req.session.accessToken) {
-        accessToken = req.session.accessToken;
-        tokenSource = 'Session';
-        console.log('✅ セッショントークンを検出:', accessToken.substring(0, 20) + '...');
-    }
-    
-    console.log('📋 認証詳細:', {
-        tokenSource: tokenSource,
-        hasAccessToken: !!accessToken,
-        accessTokenLength: accessToken ? accessToken.length : 0,
-        accessTokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : 'なし',
-        sessionID: req.sessionID,
-        userId: req.session.userId,
-        tokenExpiry: req.session.tokenExpiry,
-        sessionKeys: Object.keys(req.session)
-    });
+    const { accessToken, tokenSource } = extractAuthToken(req);
     
     if (!accessToken) {
-        console.log('❌ アクセストークンが見つかりません');
+        console.log('❌ 認証トークンが見つかりません');
         return res.status(401).json({
             error: 'Unauthorized',
             message: 'Please authenticate with Fitbit first'
         });
     }
     
-    // リクエストオブジェクトにトークンを保存（後続の処理で使用）
+    // リクエストオブジェクトにトークン情報を保存
     req.accessToken = accessToken;
     req.tokenSource = tokenSource;
     
     // セッションベースの場合のみ有効期限チェック
-    if (tokenSource === 'Session' && req.session.tokenExpiry && new Date() > req.session.tokenExpiry) {
-        console.log('⚠️ アクセストークンが期限切れです。リフレッシュを試行...');
-        
-        return refreshAccessToken(req.session)
-            .then(() => {
-                req.accessToken = req.session.accessToken;
-                next();
-            })
-            .catch(() => {
-                req.session.destroy();
-                res.status(401).json({
-                    error: 'Token expired',
-                    message: 'Please re-authenticate with Fitbit'
-                });
-            });
+    if (shouldRefreshToken(req, tokenSource)) {
+        return handleTokenRefresh(req, res, next);
     }
     
-    console.log('✅ 認証成功 - トークンソース:', tokenSource);
+    console.log(`✅ 認証成功 (${tokenSource})`);
     next();
+}
+
+// 認証トークンを抽出
+function extractAuthToken(req) {
+    // 1. Authorization ヘッダーからBearerトークンをチェック（優先）
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        console.log('🔐 Bearer Token認証');
+        return { accessToken: token, tokenSource: 'Bearer Token' };
+    }
+    
+    // 2. セッションからトークンをチェック（後方互換性）
+    if (req.session.accessToken) {
+        console.log('🔐 Session認証');
+        return { accessToken: req.session.accessToken, tokenSource: 'Session' };
+    }
+    
+    return { accessToken: null, tokenSource: null };
+}
+
+// トークンリフレッシュが必要かチェック
+function shouldRefreshToken(req, tokenSource) {
+    return tokenSource === 'Session' && 
+           req.session.tokenExpiry && 
+           new Date() > req.session.tokenExpiry;
+}
+
+// トークンリフレッシュ処理
+function handleTokenRefresh(req, res, next) {
+    console.log('⚠️ トークン期限切れ - リフレッシュを試行');
+    
+    return refreshAccessToken(req.session)
+        .then(() => {
+            req.accessToken = req.session.accessToken;
+            console.log('✅ トークンリフレッシュ成功');
+            next();
+        })
+        .catch((error) => {
+            console.error('❌ トークンリフレッシュ失敗:', error.message);
+            req.session.destroy();
+            res.status(401).json({
+                error: 'Token expired',
+                message: 'Please re-authenticate with Fitbit'
+            });
+        });
 }
 
 module.exports = router;

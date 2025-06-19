@@ -9,13 +9,7 @@ router.use(requireAuth);
 // ユーザープロフィール取得
 router.get('/profile', async (req, res) => {
     try {
-        console.log('📊 プロフィール取得開始');
-        console.log('🔑 アクセストークン確認:', {
-            hasToken: !!req.accessToken,
-            tokenLength: req.accessToken ? req.accessToken.length : 0,
-            tokenPreview: req.accessToken ? req.accessToken.substring(0, 20) + '...' : 'なし',
-            tokenSource: req.tokenSource
-        });
+        console.log(`📊 プロフィール取得 (${req.tokenSource})`);
         
         const fitbitClient = new FitbitClient(req.accessToken);
         const profile = await fitbitClient.getUserProfile();
@@ -27,7 +21,6 @@ router.get('/profile', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ プロフィール取得エラー:', error.message);
-        console.error('❌ エラー詳細:', error.response?.data || error);
         res.status(500).json({
             error: 'Failed to fetch profile',
             message: error.message
@@ -38,9 +31,10 @@ router.get('/profile', async (req, res) => {
 // 今日の活動データ取得
 router.get('/activity/today', async (req, res) => {
     try {
-        console.log('📊 今日の活動データ取得開始 - トークンソース:', req.tokenSource);
+        console.log(`📊 今日の活動データ取得 (${req.tokenSource})`);
+        
         const fitbitClient = new FitbitClient(req.accessToken);
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const today = new Date().toISOString().split('T')[0];
         
         const [steps, calories, distance, activeMinutes] = await Promise.all([
             fitbitClient.getActivityData('steps', today),
@@ -49,19 +43,17 @@ router.get('/activity/today', async (req, res) => {
             fitbitClient.getActivityData('minutesVeryActive', today)
         ]);
         
-        // デバッグログ
-        console.log('📊 取得したFitbitデータ:', { steps, calories, distance, activeMinutes });
+        const activityData = {
+            date: today,
+            steps: { value: steps?.value || 0 },
+            calories: { value: calories?.value || 0 },
+            distance: { value: distance?.value || 0 },
+            activeMinutes: { value: activeMinutes?.value || 0 }
+        };
         
-        res.json({
-            success: true,
-            data: {
-                date: today,
-                steps: { value: steps?.value || 0 },
-                calories: { value: calories?.value || 0 },
-                distance: { value: (distance?.value || 0) },
-                activeMinutes: { value: activeMinutes?.value || 0 }
-            }
-        });
+        console.log('✅ 活動データ取得成功');
+        res.json({ success: true, data: activityData });
+        
     } catch (error) {
         console.error('❌ 今日の活動データ取得エラー:', error.message);
         res.status(500).json({
