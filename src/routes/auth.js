@@ -113,16 +113,17 @@ router.get('/callback', async (req, res) => {
             userId: req.session.userId
         });
         
-        // セッション保存を強制的に待つ
-        req.session.save((err) => {
-            if (err) {
-                console.error('❌ セッション保存エラー:', err);
-                return res.redirect('/?error=session_save_failed');
-            }
-            
-            console.log('🔄 セッション保存確認完了 - ダッシュボードにリダイレクト');
-            res.redirect('/dashboard');
-        });
+        // Vercelでセッションが機能しない場合の代替策
+        // トークンをURLパラメータとして一時的に渡す（開発用）
+        const tempToken = Buffer.from(JSON.stringify({
+            accessToken: access_token,
+            refreshToken: refresh_token,
+            userId: user_id,
+            expires: Date.now() + expires_in * 1000
+        })).toString('base64');
+        
+        console.log('🔄 トークンをURLパラメータで渡してダッシュボードにリダイレクト');
+        res.redirect(`/dashboard?token=${tempToken}`);
         
     } catch (error) {
         console.error('❌ トークン取得エラー:', error.response?.data || error.message);

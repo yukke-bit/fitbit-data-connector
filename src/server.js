@@ -71,6 +71,25 @@ app.get('/dashboard', (req, res) => {
         tokenExpiry: req.session.tokenExpiry
     });
     
+    // URLパラメータからトークンをチェック（Vercel対応）
+    if (req.query.token) {
+        try {
+            const tokenData = JSON.parse(Buffer.from(req.query.token, 'base64').toString());
+            console.log('🔄 URLパラメータからトークン復元');
+            
+            // セッションに保存を再試行
+            req.session.accessToken = tokenData.accessToken;
+            req.session.refreshToken = tokenData.refreshToken;
+            req.session.userId = tokenData.userId;
+            req.session.tokenExpiry = new Date(tokenData.expires);
+            
+            console.log('✅ トークン復元完了 - ダッシュボード表示');
+            return res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+        } catch (error) {
+            console.error('❌ トークン復元エラー:', error);
+        }
+    }
+    
     if (!req.session.accessToken) {
         console.log('❌ アクセストークンなし - ホームにリダイレクト');
         return res.redirect('/');
