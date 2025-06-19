@@ -1566,7 +1566,7 @@ body {
     justify-content: center;
     margin: 0 auto 30px;
     font-size: 3.5rem;
-    color: white;
+    color: #e74c3c;
     backdrop-filter: blur(10px);
     animation: pulse-gentle 3s ease-in-out infinite;
 }
