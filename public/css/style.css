@@ -2144,3 +2144,21 @@ body {
     color: #2c3e50;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
+
+/* Fitbitブランド色 */
+.fitbit-brand {
+    background: linear-gradient(135deg, #00BF63 0%, #008B3A 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+    text-shadow: none;
+}
+
+/* Fallback for browsers that don't support background-clip */
+@supports not (-webkit-background-clip: text) {
+    .fitbit-brand {
+        color: #00BF63;
+        -webkit-text-fill-color: initial;
+    }
+}
