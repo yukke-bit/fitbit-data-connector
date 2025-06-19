@@ -64,7 +64,8 @@ app.get('/', (req, res) => {
 
 // ダッシュボードページ
 app.get('/dashboard', (req, res) => {
-    console.log('📊 ダッシュボードアクセス');
+    console.log('📊 ダッシュボードアクセス - デバッグバージョン 20250619-1');
+    console.log('🔥 Vercelログテスト: この行が見えれば正常にログ出力されています');
     console.log('🔍 ダッシュボード セッション詳細確認:', {
         sessionID: req.sessionID,
         hasAccessToken: !!req.session.accessToken,
