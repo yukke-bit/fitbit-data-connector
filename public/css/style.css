@@ -68,10 +68,10 @@ body {
 
 .hero-description {
     font-size: 1.2rem;
-    color: #34495e;
+    color: #000000;
     margin-bottom: 50px;
     line-height: 1.8;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .features-preview {
@@ -102,8 +102,8 @@ body {
 }
 
 .feature-item span {
-    font-weight: 500;
-    color: #2c3e50;
+    font-weight: 600;
+    color: #000000;
 }
 
 .cta-section {
@@ -146,7 +146,8 @@ body {
     align-items: center;
     gap: 8px;
     font-size: 0.9rem;
-    color: #7f8c8d;
+    color: #333333;
+    font-weight: 500;
 }
 
 .security-note i {
