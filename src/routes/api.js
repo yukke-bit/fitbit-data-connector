@@ -11,12 +11,13 @@ router.get('/profile', async (req, res) => {
     try {
         console.log('📊 プロフィール取得開始');
         console.log('🔑 アクセストークン確認:', {
-            hasToken: !!req.session.accessToken,
-            tokenLength: req.session.accessToken ? req.session.accessToken.length : 0,
-            tokenPreview: req.session.accessToken ? req.session.accessToken.substring(0, 20) + '...' : 'なし'
+            hasToken: !!req.accessToken,
+            tokenLength: req.accessToken ? req.accessToken.length : 0,
+            tokenPreview: req.accessToken ? req.accessToken.substring(0, 20) + '...' : 'なし',
+            tokenSource: req.tokenSource
         });
         
-        const fitbitClient = new FitbitClient(req.session.accessToken);
+        const fitbitClient = new FitbitClient(req.accessToken);
         const profile = await fitbitClient.getUserProfile();
         
         console.log('✅ プロフィール取得成功');
@@ -37,7 +38,8 @@ router.get('/profile', async (req, res) => {
 // 今日の活動データ取得
 router.get('/activity/today', async (req, res) => {
     try {
-        const fitbitClient = new FitbitClient(req.session.accessToken);
+        console.log('📊 今日の活動データ取得開始 - トークンソース:', req.tokenSource);
+        const fitbitClient = new FitbitClient(req.accessToken);
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         
         const [steps, calories, distance, activeMinutes] = await Promise.all([
@@ -73,7 +75,7 @@ router.get('/activity/today', async (req, res) => {
 router.get('/activity/steps', async (req, res) => {
     try {
         const { period = 'today' } = req.query; // today, 7d, 30d, 3m, 6m, 1y
-        const fitbitClient = new FitbitClient(req.session.accessToken);
+        const fitbitClient = new FitbitClient(req.accessToken);
         
         const stepsData = await fitbitClient.getActivityTimeSeries('steps', period);
         
@@ -94,7 +96,7 @@ router.get('/activity/steps', async (req, res) => {
 router.get('/heartrate', async (req, res) => {
     try {
         const { date = 'today' } = req.query;
-        const fitbitClient = new FitbitClient(req.session.accessToken);
+        const fitbitClient = new FitbitClient(req.accessToken);
         
         const heartRateData = await fitbitClient.getHeartRateData(date);
         
@@ -115,7 +117,7 @@ router.get('/heartrate', async (req, res) => {
 router.get('/sleep', async (req, res) => {
     try {
         const { date = 'today' } = req.query;
-        const fitbitClient = new FitbitClient(req.session.accessToken);
+        const fitbitClient = new FitbitClient(req.accessToken);
         
         const sleepData = await fitbitClient.getSleepData(date);
         
@@ -135,7 +137,7 @@ router.get('/sleep', async (req, res) => {
 // 週間サマリー取得
 router.get('/summary/weekly', async (req, res) => {
     try {
-        const fitbitClient = new FitbitClient(req.session.accessToken);
+        const fitbitClient = new FitbitClient(req.accessToken);
         
         const [stepsWeek, caloriesWeek, sleepWeek] = await Promise.all([
             fitbitClient.getActivityTimeSeries('steps', '7d'),
@@ -174,7 +176,7 @@ router.get('/summary/weekly', async (req, res) => {
 // デバイス情報取得
 router.get('/devices', async (req, res) => {
     try {
-        const fitbitClient = new FitbitClient(req.session.accessToken);
+        const fitbitClient = new FitbitClient(req.accessToken);
         const devices = await fitbitClient.getDevices();
         
         res.json({

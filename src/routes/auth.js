@@ -207,18 +207,36 @@ async function refreshAccessToken(session) {
 // 認証ミドルウェア
 function requireAuth(req, res, next) {
     console.log('🔐 認証ミドルウェア実行');
-    console.log('📋 セッション詳細:', {
+    
+    let accessToken = null;
+    let tokenSource = '';
+    
+    // 1. Authorization ヘッダーからBearerトークンをチェック（優先）
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        accessToken = authHeader.substring(7); // "Bearer " を除去
+        tokenSource = 'Bearer Token';
+        console.log('✅ Bearer トークンを検出:', accessToken.substring(0, 20) + '...');
+    }
+    // 2. セッションからトークンをチェック（後方互換性）
+    else if (req.session.accessToken) {
+        accessToken = req.session.accessToken;
+        tokenSource = 'Session';
+        console.log('✅ セッショントークンを検出:', accessToken.substring(0, 20) + '...');
+    }
+    
+    console.log('📋 認証詳細:', {
+        tokenSource: tokenSource,
+        hasAccessToken: !!accessToken,
+        accessTokenLength: accessToken ? accessToken.length : 0,
+        accessTokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : 'なし',
         sessionID: req.sessionID,
-        hasAccessToken: !!req.session.accessToken,
-        accessTokenLength: req.session.accessToken ? req.session.accessToken.length : 0,
-        accessTokenPreview: req.session.accessToken ? req.session.accessToken.substring(0, 20) + '...' : 'なし',
         userId: req.session.userId,
         tokenExpiry: req.session.tokenExpiry,
-        sessionKeys: Object.keys(req.session),
-        sessionData: JSON.stringify(req.session)
+        sessionKeys: Object.keys(req.session)
     });
     
-    if (!req.session.accessToken) {
+    if (!accessToken) {
         console.log('❌ アクセストークンが見つかりません');
         return res.status(401).json({
             error: 'Unauthorized',
@@ -226,12 +244,19 @@ function requireAuth(req, res, next) {
         });
     }
     
-    // トークンの有効期限チェック
-    if (req.session.tokenExpiry && new Date() > req.session.tokenExpiry) {
+    // リクエストオブジェクトにトークンを保存（後続の処理で使用）
+    req.accessToken = accessToken;
+    req.tokenSource = tokenSource;
+    
+    // セッションベースの場合のみ有効期限チェック
+    if (tokenSource === 'Session' && req.session.tokenExpiry && new Date() > req.session.tokenExpiry) {
         console.log('⚠️ アクセストークンが期限切れです。リフレッシュを試行...');
         
         return refreshAccessToken(req.session)
-            .then(() => next())
+            .then(() => {
+                req.accessToken = req.session.accessToken;
+                next();
+            })
             .catch(() => {
                 req.session.destroy();
                 res.status(401).json({
@@ -241,6 +266,7 @@ function requireAuth(req, res, next) {
             });
     }
     
+    console.log('✅ 認証成功 - トークンソース:', tokenSource);
     next();
 }
 

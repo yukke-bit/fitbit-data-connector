@@ -7,9 +7,64 @@ class FitbitDashboard {
         this.init();
     }
 
+    // LocalStorageからトークンを取得する関数
+    getAuthToken() {
+        const tokenData = localStorage.getItem('fitbit_token');
+        if (!tokenData) return null;
+        
+        try {
+            const parsed = JSON.parse(atob(tokenData));
+            return parsed.accessToken;
+        } catch (error) {
+            console.error('トークンの解析に失敗:', error);
+            localStorage.removeItem('fitbit_token');
+            return null;
+        }
+    }
+
+    // 認証ヘッダーを作成する関数
+    getAuthHeaders() {
+        const token = this.getAuthToken();
+        if (!token) {
+            throw new Error('認証トークンがありません');
+        }
+        
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+    }
+
+    // トークンの有効性をチェックし、無効な場合はログインページにリダイレクト
+    handleAuthError(error) {
+        console.error('認証エラー:', error);
+        this.addDebugLog('error', '認証エラーが発生しました', error.message);
+        
+        // トークンを削除
+        localStorage.removeItem('fitbit_token');
+        
+        // ログインページにリダイレクト
+        alert('認証の有効期限が切れました。再度ログインしてください。');
+        window.location.href = '/login.html';
+    }
+
     async init() {
         this.bindEvents();
         this.addDebugLog('info', 'ダッシュボード初期化開始');
+        
+        // トークンの存在チェック
+        try {
+            const token = this.getAuthToken();
+            if (!token) {
+                this.addDebugLog('error', '認証トークンが見つかりません');
+                this.handleAuthError(new Error('認証トークンがありません'));
+                return;
+            }
+            this.addDebugLog('info', '認証トークンを確認しました');
+        } catch (error) {
+            this.handleAuthError(error);
+            return;
+        }
         
         await this.loadUserProfile();
         await this.loadTodayData();
@@ -60,9 +115,22 @@ class FitbitDashboard {
     async loadUserProfile() {
         try {
             this.addDebugLog('info', 'プロフィール取得開始');
-            const response = await fetch('/api/profile');
-            const data = await response.json();
             
+            // 認証ヘッダーを取得
+            const headers = this.getAuthHeaders();
+            
+            const response = await fetch('/api/profile', {
+                method: 'GET',
+                headers: headers
+            });
+            
+            // 認証エラーの場合
+            if (response.status === 401) {
+                this.handleAuthError(new Error('認証が必要です'));
+                return;
+            }
+            
+            const data = await response.json();
             this.addDebugLog('success', 'プロフィールAPI応答', data);
 
             if (data.success) {
@@ -81,15 +149,33 @@ class FitbitDashboard {
         } catch (error) {
             console.error('プロフィール読み込みエラー:', error);
             this.addDebugLog('error', 'プロフィール読み込みエラー', error.message);
+            
+            // 認証エラーの場合の処理
+            if (error.message.includes('認証トークンがありません')) {
+                this.handleAuthError(error);
+            }
         }
     }
 
     async loadTodayData() {
         try {
             this.addDebugLog('info', '今日の活動データ取得開始');
-            const response = await fetch('/api/activity/today');
-            const data = await response.json();
             
+            // 認証ヘッダーを取得
+            const headers = this.getAuthHeaders();
+            
+            const response = await fetch('/api/activity/today', {
+                method: 'GET',
+                headers: headers
+            });
+            
+            // 認証エラーの場合
+            if (response.status === 401) {
+                this.handleAuthError(new Error('認証が必要です'));
+                return;
+            }
+            
+            const data = await response.json();
             this.addDebugLog('success', '今日の活動データAPI応答', data);
 
             if (data.success) {
@@ -120,12 +206,30 @@ class FitbitDashboard {
             console.error('今日のデータ読み込みエラー:', error);
             this.addDebugLog('error', '今日のデータ読み込みエラー', error.message);
             this.showError('今日の活動データの読み込みに失敗しました。');
+            
+            // 認証エラーの場合の処理
+            if (error.message.includes('認証トークンがありません')) {
+                this.handleAuthError(error);
+            }
         }
     }
 
     async loadHeartRateData() {
         try {
-            const response = await fetch('/api/heartrate');
+            // 認証ヘッダーを取得
+            const headers = this.getAuthHeaders();
+            
+            const response = await fetch('/api/heartrate', {
+                method: 'GET',
+                headers: headers
+            });
+            
+            // 認証エラーの場合
+            if (response.status === 401) {
+                this.handleAuthError(new Error('認証が必要です'));
+                return;
+            }
+            
             const data = await response.json();
 
             if (data.success && data.data) {
@@ -143,6 +247,11 @@ class FitbitDashboard {
             }
         } catch (error) {
             console.error('心拍数データ読み込みエラー:', error);
+            
+            // 認証エラーの場合の処理
+            if (error.message.includes('認証トークンがありません')) {
+                this.handleAuthError(error);
+            }
         }
     }
 
@@ -174,7 +283,20 @@ class FitbitDashboard {
 
     async loadSleepData() {
         try {
-            const response = await fetch('/api/sleep');
+            // 認証ヘッダーを取得
+            const headers = this.getAuthHeaders();
+            
+            const response = await fetch('/api/sleep', {
+                method: 'GET',
+                headers: headers
+            });
+            
+            // 認証エラーの場合
+            if (response.status === 401) {
+                this.handleAuthError(new Error('認証が必要です'));
+                return;
+            }
+            
             const data = await response.json();
 
             if (data.success && data.data) {
@@ -201,12 +323,30 @@ class FitbitDashboard {
             }
         } catch (error) {
             console.error('睡眠データ読み込みエラー:', error);
+            
+            // 認証エラーの場合の処理
+            if (error.message.includes('認証トークンがありません')) {
+                this.handleAuthError(error);
+            }
         }
     }
 
     async loadWeeklySummary() {
         try {
-            const response = await fetch('/api/summary/weekly');
+            // 認証ヘッダーを取得
+            const headers = this.getAuthHeaders();
+            
+            const response = await fetch('/api/summary/weekly', {
+                method: 'GET',
+                headers: headers
+            });
+            
+            // 認証エラーの場合
+            if (response.status === 401) {
+                this.handleAuthError(new Error('認証が必要です'));
+                return;
+            }
+            
             const data = await response.json();
 
             if (data.success) {
@@ -215,12 +355,30 @@ class FitbitDashboard {
             }
         } catch (error) {
             console.error('週間サマリー読み込みエラー:', error);
+            
+            // 認証エラーの場合の処理
+            if (error.message.includes('認証トークンがありません')) {
+                this.handleAuthError(error);
+            }
         }
     }
 
     async loadDevices() {
         try {
-            const response = await fetch('/api/devices');
+            // 認証ヘッダーを取得
+            const headers = this.getAuthHeaders();
+            
+            const response = await fetch('/api/devices', {
+                method: 'GET',
+                headers: headers
+            });
+            
+            // 認証エラーの場合
+            if (response.status === 401) {
+                this.handleAuthError(new Error('認証が必要です'));
+                return;
+            }
+            
             const data = await response.json();
 
             if (data.success) {
@@ -228,6 +386,11 @@ class FitbitDashboard {
             }
         } catch (error) {
             console.error('デバイス情報読み込みエラー:', error);
+            
+            // 認証エラーの場合の処理
+            if (error.message.includes('認証トークンがありません')) {
+                this.handleAuthError(error);
+            }
         }
     }
 
@@ -398,17 +561,33 @@ class FitbitDashboard {
     async handleLogout() {
         if (confirm('ログアウトしますか？')) {
             try {
+                // 認証ヘッダーを取得（トークンがない場合でもログアウト処理は実行）
+                let headers = {};
+                try {
+                    headers = this.getAuthHeaders();
+                } catch (error) {
+                    // トークンがない場合でもログアウト処理を続行
+                    console.warn('トークンが見つかりませんが、ログアウト処理を続行します');
+                }
+                
                 const response = await fetch('/auth/logout', {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: headers
                 });
 
-                if (response.ok) {
+                // LocalStorageからトークンを削除
+                localStorage.removeItem('fitbit_token');
+
+                if (response.ok || response.status === 401) {
+                    // 成功または認証エラーの場合、どちらもログインページにリダイレクト
                     window.location.href = '/';
                 } else {
                     throw new Error('ログアウトに失敗しました');
                 }
             } catch (error) {
                 console.error('ログアウトエラー:', error);
+                // エラーが発生してもLocalStorageはクリアしてリダイレクト
+                localStorage.removeItem('fitbit_token');
                 this.showError('ログアウトに失敗しました。');
             }
         }
@@ -501,8 +680,20 @@ class FitbitDashboard {
     // 自動更新機能
     startAutoRefresh() {
         setInterval(async () => {
-            await this.loadTodayData();
-            document.getElementById('last-sync').textContent = `最終更新: ${new Date().toLocaleTimeString('ja-JP')}`;
+            try {
+                // トークンの存在をチェック
+                const token = this.getAuthToken();
+                if (!token) {
+                    this.addDebugLog('warning', '自動更新: 認証トークンがありません');
+                    return;
+                }
+                
+                await this.loadTodayData();
+                document.getElementById('last-sync').textContent = `最終更新: ${new Date().toLocaleTimeString('ja-JP')}`;
+            } catch (error) {
+                console.warn('自動更新エラー:', error);
+                // 認証エラーの場合は自動更新を停止しない（ユーザーが気づいていない可能性があるため）
+            }
         }, 5 * 60 * 1000); // 5分ごと
     }
 }

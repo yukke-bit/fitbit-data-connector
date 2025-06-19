@@ -64,7 +64,7 @@ app.get('/', (req, res) => {
 
 // ダッシュボードページ
 app.get('/dashboard', (req, res) => {
-    console.log('📊 ダッシュボードアクセス - デバッグバージョン 20250619-1');
+    console.log('📊 ダッシュボードアクセス - デバッグバージョン 20250619-2');
     console.log('🔥 Vercelログテスト: この行が見えれば正常にログ出力されています');
     console.log('🔍 ダッシュボード セッション詳細確認:', {
         sessionID: req.sessionID,
@@ -90,13 +90,41 @@ app.get('/dashboard', (req, res) => {
             req.session.userId = tokenData.userId;
             req.session.tokenExpiry = new Date(tokenData.expires);
             
-            console.log('✅ トークン復元完了 - ダッシュボード表示');
-            return res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+            console.log('✅ トークン復元完了 - LocalStorageに保存してダッシュボード表示');
+            
+            // LocalStorageにトークンを保存するスクリプトを含むHTMLを返す
+            return res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fitbit データ連携 - ダッシュボード</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div style="text-align: center; padding: 50px;">
+        <h2>🔄 認証完了 - ダッシュボードに移動中...</h2>
+        <p>お待ちください...</p>
+    </div>
+    <script>
+        // トークンをLocalStorageに保存
+        localStorage.setItem('fitbit_token', '${req.query.token}');
+        console.log('✅ トークンをLocalStorageに保存しました');
+        
+        // ダッシュボードページにリダイレクト
+        setTimeout(() => {
+            window.location.replace('/dashboard.html');
+        }, 1000);
+    </script>
+</body>
+</html>
+            `);
         } catch (error) {
             console.error('❌ トークン復元エラー:', error);
         }
     }
     
+    // セッションベースの認証チェック（後方互換性のため）
     if (!req.session.accessToken) {
         console.log('❌ アクセストークンなし - ホームにリダイレクト');
         return res.redirect('/');
