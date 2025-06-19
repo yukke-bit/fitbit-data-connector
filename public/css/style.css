@@ -68,7 +68,7 @@ body {
 
 .hero-description {
     font-size: 1.2rem;
-    color: #5a6c7d;
+    color: #34495e;
     margin-bottom: 50px;
     line-height: 1.8;
     font-weight: 500;
@@ -146,7 +146,7 @@ body {
     align-items: center;
     gap: 8px;
     font-size: 0.9rem;
-    color: #95a5a6;
+    color: #7f8c8d;
 }
 
 .security-note i {
