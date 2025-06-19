@@ -9,15 +9,24 @@ router.use(requireAuth);
 // ユーザープロフィール取得
 router.get('/profile', async (req, res) => {
     try {
+        console.log('📊 プロフィール取得開始');
+        console.log('🔑 アクセストークン確認:', {
+            hasToken: !!req.session.accessToken,
+            tokenLength: req.session.accessToken ? req.session.accessToken.length : 0,
+            tokenPreview: req.session.accessToken ? req.session.accessToken.substring(0, 20) + '...' : 'なし'
+        });
+        
         const fitbitClient = new FitbitClient(req.session.accessToken);
         const profile = await fitbitClient.getUserProfile();
         
+        console.log('✅ プロフィール取得成功');
         res.json({
             success: true,
             data: profile
         });
     } catch (error) {
         console.error('❌ プロフィール取得エラー:', error.message);
+        console.error('❌ エラー詳細:', error.response?.data || error);
         res.status(500).json({
             error: 'Failed to fetch profile',
             message: error.message

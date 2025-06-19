@@ -80,6 +80,13 @@ router.get('/callback', async (req, res) => {
         const clientSecret = process.env.FITBIT_CLIENT_SECRET;
         const redirectUri = process.env.FITBIT_REDIRECT_URL;
         
+        console.log('🔍 環境変数確認:', {
+            hasClientId: !!clientId,
+            hasClientSecret: !!clientSecret,
+            hasRedirectUri: !!redirectUri,
+            redirectUri: redirectUri
+        });
+        
         if (!clientId || !clientSecret || !redirectUri) {
             console.error('❌ 認証設定が見つかりません');
             return res.redirect('/?error=no_config&error_description=認証設定が見つかりません');
