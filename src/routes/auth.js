@@ -206,7 +206,20 @@ async function refreshAccessToken(session) {
 
 // 認証ミドルウェア
 function requireAuth(req, res, next) {
+    console.log('🔐 認証ミドルウェア実行');
+    console.log('📋 セッション詳細:', {
+        sessionID: req.sessionID,
+        hasAccessToken: !!req.session.accessToken,
+        accessTokenLength: req.session.accessToken ? req.session.accessToken.length : 0,
+        accessTokenPreview: req.session.accessToken ? req.session.accessToken.substring(0, 20) + '...' : 'なし',
+        userId: req.session.userId,
+        tokenExpiry: req.session.tokenExpiry,
+        sessionKeys: Object.keys(req.session),
+        sessionData: JSON.stringify(req.session)
+    });
+    
     if (!req.session.accessToken) {
+        console.log('❌ アクセストークンが見つかりません');
         return res.status(401).json({
             error: 'Unauthorized',
             message: 'Please authenticate with Fitbit first'

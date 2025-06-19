@@ -65,10 +65,16 @@ app.get('/', (req, res) => {
 // ダッシュボードページ
 app.get('/dashboard', (req, res) => {
     console.log('📊 ダッシュボードアクセス');
-    console.log('🔍 セッション確認:', {
+    console.log('🔍 ダッシュボード セッション詳細確認:', {
+        sessionID: req.sessionID,
         hasAccessToken: !!req.session.accessToken,
+        accessTokenLength: req.session.accessToken ? req.session.accessToken.length : 0,
+        accessTokenPreview: req.session.accessToken ? req.session.accessToken.substring(0, 20) + '...' : 'なし',
         userId: req.session.userId,
-        tokenExpiry: req.session.tokenExpiry
+        tokenExpiry: req.session.tokenExpiry,
+        sessionKeys: Object.keys(req.session),
+        hasTokenParam: !!req.query.token,
+        sessionData: JSON.stringify(req.session)
     });
     
     // URLパラメータからトークンをチェック（Vercel対応）
