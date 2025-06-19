@@ -1582,9 +1582,10 @@ body {
 
 .hero-description {
     font-size: 1.3rem;
-    color: rgba(255, 255, 255, 0.9);
+    color: #000000;
     margin-bottom: 40px;
     line-height: 1.6;
+    font-weight: 600;
 }
 
 .features-preview {
@@ -1599,7 +1600,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    color: white;
+    color: #000000;
     min-width: 100px;
 }
 
@@ -1661,8 +1662,9 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: rgba(255, 255, 255, 0.8);
+    color: #333333;
     font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .security-note i {
