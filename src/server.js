@@ -113,10 +113,17 @@ app.get('/test', (req, res) => {
 
 // ヘルスチェック
 app.get('/health', (req, res) => {
+    console.log('🏥 ヘルスチェック実行 - サーバーサイドログテスト');
+    console.log('🔍 Node環境:', process.env.NODE_ENV);
+    console.log('🔍 Vercel環境:', process.env.VERCEL_ENV);
+    
     res.json({
         status: 'OK',
         timestamp: new Date().toISOString(),
-        version: require('../package.json').version
+        version: require('../package.json').version,
+        environment: process.env.NODE_ENV || 'development',
+        vercel_env: process.env.VERCEL_ENV,
+        message: 'サーバーサイド処理が正常に動作しています'
     });
 });
 
