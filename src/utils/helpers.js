@@ -144,10 +144,24 @@ class FitbitHelpers {
     // セッションデータの暗号化
     static encryptSessionData(data, secret) {
         try {
-            const cipher = crypto.createCipher('aes-256-cbc', secret);
+            // 安全な暗号化方式を使用
+            const algorithm = 'aes-256-gcm';
+            const iv = crypto.randomBytes(16);
+            const key = crypto.scryptSync(secret, 'salt', 32);
+            
+            const cipher = crypto.createCipher(algorithm, key);
+            cipher.setAAD(Buffer.from('fitbit-session', 'utf8'));
+            
             let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
             encrypted += cipher.final('hex');
-            return encrypted;
+            
+            const authTag = cipher.getAuthTag();
+            
+            return {
+                iv: iv.toString('hex'),
+                encrypted: encrypted,
+                authTag: authTag.toString('hex')
+            };
         } catch (error) {
             console.error('Session encryption error:', error);
             return null;
@@ -157,9 +171,22 @@ class FitbitHelpers {
     // セッションデータの復号化
     static decryptSessionData(encryptedData, secret) {
         try {
-            const decipher = crypto.createDecipher('aes-256-cbc', secret);
-            let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+            if (!encryptedData || typeof encryptedData !== 'object') {
+                return null;
+            }
+            
+            const algorithm = 'aes-256-gcm';
+            const key = crypto.scryptSync(secret, 'salt', 32);
+            const iv = Buffer.from(encryptedData.iv, 'hex');
+            const authTag = Buffer.from(encryptedData.authTag, 'hex');
+            
+            const decipher = crypto.createDecipher(algorithm, key);
+            decipher.setAAD(Buffer.from('fitbit-session', 'utf8'));
+            decipher.setAuthTag(authTag);
+            
+            let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
             decrypted += decipher.final('utf8');
+            
             return JSON.parse(decrypted);
         } catch (error) {
             console.error('Session decryption error:', error);
